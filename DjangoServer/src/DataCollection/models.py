@@ -36,7 +36,7 @@ class sms_message(models.Model):
     def __unicode__(self): 
         return self.body
 class facebook_conversation(models.Model):
-    user = models.ForeignKey(User)
+    user = models.ManyToManyField(User)
     message_count = models.IntegerField()
     thread_id = models.TextField(primary_key=True)
     updated_time = models.TextField()
@@ -46,6 +46,7 @@ class facebook_conversation(models.Model):
         
         
 class facebook_messages(models.Model):
+    m_id=models.CharField(max_length=100,primary_key=True)
     conversation = models.ForeignKey(facebook_conversation)
     author_id = models.TextField()
     body = models.TextField()
