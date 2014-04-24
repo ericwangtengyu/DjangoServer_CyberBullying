@@ -2,12 +2,14 @@ from django.db import models
 
 class User(models.Model):
     phone_number = models.CharField(max_length=12, primary_key=True)
-    facebook_token = models.TextField()
-    facebook_appid = models.TextField()
-    twitter_token = models.TextField()
-    twitter_id = models.TextField()
-    twitter_secret = models.TextField()
-    twitter_screen_name = models.TextField()
+    has_servey = models.BooleanField(default = False)
+    servey = models.TextField(default = "http://www.google.com")
+    facebook_token = models.TextField(default = "")
+    facebook_appid = models.TextField(default = "")
+    twitter_token = models.TextField(default = "")
+    twitter_id = models.TextField(default = "")
+    twitter_secret = models.TextField(default = "")
+    twitter_screen_name = models.TextField(default = "")
     def __unicode__(self): 
         return str(self.phone_number)
     
@@ -36,7 +38,7 @@ class sms_message(models.Model):
     def __unicode__(self): 
         return self.body
 class facebook_conversation(models.Model):
-    user = models.ManyToManyField(User)
+    user = models.ForeignKey(User)
     message_count = models.IntegerField()
     thread_id = models.TextField(primary_key=True)
     updated_time = models.TextField()
@@ -46,7 +48,6 @@ class facebook_conversation(models.Model):
         
         
 class facebook_messages(models.Model):
-    m_id=models.CharField(max_length=100,primary_key=True)
     conversation = models.ForeignKey(facebook_conversation)
     author_id = models.TextField()
     body = models.TextField()

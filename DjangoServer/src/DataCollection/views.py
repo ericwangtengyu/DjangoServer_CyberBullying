@@ -1,6 +1,6 @@
 from DataCollection.models import User, twitter_direct_conversation, \
     twitter_conversation, twitter_message, sms_conversation, userInfo, \
-    twitter_status, facebook_messages, facebook_conversation
+    twitter_status
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
@@ -8,16 +8,51 @@ import json
 def index(request):
     return HttpResponse("Hello, world. You're at the poll index.")
 
+@csrf_exempt
+def getHelp(request):
+    return HttpResponse("we're here to help")
+
+@csrf_exempt
+def reportBulling(request):
+    return HttpResponse("comforting message to get user to report a bully ")
+@csrf_exempt
+def newToken(request):
+    try:
+        data=json.loads(request.body)
+        user = User.objects.get(phone_number = data.get("user"))
+        user.facebook_token = data.get("facebook_token")
+        user.save()
+        return HttpResponse("worked")
+    except:
+        return HttpResponse("null")
+
+    
+@csrf_exempt
+def servey(request):
+    try:
+        data=json.loads(request.body)
+        user = User.objects.get(phone_number = data.get("user"))
+        #user.has_servey = True
+        user.save()
+        print user.has_servey
+        if(user.has_servey):
+            return HttpResponse(user.servey)
+        else:
+            return HttpResponse("null")
+    except:
+        return HttpResponse("null")
+                                
 @csrf_exempt    
 def postandroid(request):
     print 'Post from Android'
     try:
         data=json.loads(request.body)
+        print data
         user = User.objects.get( phone_number = data.get("user"))
         conversations = data.get("conversation")
         for conver in conversations:
             try:
-                conversation = user.sms_conversation_set.get( participants = conver.get("participants"))
+                conversation = user.sms_conversation_set.get( participants = conver.get("participant"))
             except:
                 user.sms_conversation_set.create(participants = conver.get("participant") , last_updated = conver.get("endTime"))
                 conversation = user.sms_conversation_set.get( participants = conver.get("participant"))
@@ -38,15 +73,10 @@ def get_all_faceid(request):
     allUser = User.objects.all()
     var = []
     convar = []
-    try:
-        for x in allUser:
-            for con in x.facebook_conversation_set.all():
-                convar.append({"thread_id" : con.thread_id , "updated_time": con.updated_time})
-            var.append({"phone":x.phone_number , "token": x.facebook_token , "info" : convar})
-    except:
-        import sys
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        print exc_type, exc_tb, exc_obj
+    for x in allUser:
+        for con in x.facebook_conversation_set.all():
+            convar.append({"thread_id" : con.thread_id , "updated_time": con.updated_time})
+        var.append({"phone":x.phone_number , "token": x.facebook_token , "info" : convar})
     dump = { "data" : var }
     return HttpResponse(json.dumps(dump), content_type="application/json")
 
@@ -64,17 +94,31 @@ def get_all_twitter(request):
 
 @csrf_exempt    
 def make_user(request):
-    print 'got here'
+    data = json.loads(request.body)
+    print data
     try:
-        data = json.loads(request.body)
-        print data
         u = User( phone_number = data.get("phone_number") , facebook_token = data.get("facebook_token") , facebook_appid = data.get("facebook_appid") , twitter_token = data.get("twitter_token") , twitter_secret = data.get("twitter_secret") , twitter_screen_name = data.get("twitter_screen_name"), twitter_id = data.get("twitter_id"))   
-        u.save();
+        u.save()
         user_info=userInfo(user=u,userTimeLineSinceID=1,mentionTimeLineSinceID=1,directMsgSinceID=1,sentDirectMsgSinceID=1)  
         user_info.save()
     except:
-        print 'Exception: Could not parse JSON'
-    return HttpResponse('worked')
+        try:
+            u = User( phone_number = data.get("phone_number") , twitter_token = data.get("twitter_token") , twitter_secret = data.get("twitter_secret") , twitter_screen_name = data.get("twitter_screen_name"), twitter_id = data.get("twitter_id"))   
+            u.save()
+            user_info=userInfo(user=u,userTimeLineSinceID=1,mentionTimeLineSinceID=1,directMsgSinceID=1,sentDirectMsgSinceID=1)  
+            user_info.save()
+        except:
+            try:
+                u = User( phone_number = data.get("phone_number") , facebook_token = data.get("facebook_token") , facebook_appid = data.get("facebook_appid"))   
+                u.save()
+            except:
+                try:
+                    u = User( phone_number = data.get("phone_number"))   
+                    u.save()
+                except:
+                    return HttpResponse('FAIL')
+                    print 'Exception: Could not parse JSON'
+    return HttpResponse('PASS')
 
 
 
@@ -91,16 +135,9 @@ def facebook_post(request):
             print "step2"
             try:
                 print " I tryed"
-                #conversation = user.facebook_conversation_set.get( pk = conversationData.get("thread_id"))
-                conversation=facebook_conversation.objects.get(pk=conversationData.get("thread_id"));
-                if not conversation.user.objects.filter(pk=data.get("user")):
-                    conversation.user.add(user)
+                conversation = user.facebook_conversation_set.get( pk = conversationData.get("thread_id"))
             except:
-                conversation=facebook_conversation( message_count= conversationData.get("message_count") , thread_id = conversationData.get("thread_id") ,updated_time = conversationData.get("updated_time") , recipients = conversationData.get("recipients"))
-                conversation.save()
-                conversation.user.add(user)
-
-                #user.facebook_conversation_set.create( message_count= conversationData.get("message_count") , thread_id = conversationData.get("thread_id") ,updated_time = conversationData.get("updated_time") , recipients = conversationData.get("recipients"))
+                user.facebook_conversation_set.create( message_count= conversationData.get("message_count") , thread_id = conversationData.get("thread_id") ,updated_time = conversationData.get("updated_time") , recipients = conversationData.get("recipients"))
                 print "create"
                 conversation = user.facebook_conversation_set.get( pk = conversationData.get("thread_id"))
                 print "step3"
@@ -108,11 +145,7 @@ def facebook_post(request):
             for message in conversationData.get("messages"):
                 print "step4"
                 print message.keys()
-                print message
-                if not facebook_messages.objects.filter(pk=message.get("message_id")):
-                    print "Msg not exist"
-                    print conversation.facebook_messages_set.all()
-                    conversation.facebook_messages_set.create(m_id=message.get("message_id"),author_id = message.get("author_id") , body = message.get("body"), created_time = message.get("created_time"))
+                conversation.facebook_messages_set.create(author_id = message.get("author_id") , body = message.get("body"), created_time = message.get("created_time"))
                 print "step5"
         
         for streamData in stream_objects:
