@@ -1,6 +1,6 @@
 from DataCollection.models import User, twitter_direct_conversation, \
     twitter_conversation, twitter_message, sms_conversation, userInfo, \
-    twitter_status
+    twitter_status, facebook_conversation, facebook_messages
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
@@ -52,7 +52,9 @@ def postandroid(request):
         conversations = data.get("conversation")
         for conver in conversations:
             try:
-                conversation = user.sms_conversation_set.get( participants = conver.get("participant"))
+                conversation = sms_conversation.objects.get(participants=conver.get("participant"))
+                if not conversation.user.objects.filter(pk=data.get("user")):
+                    conversation.user.add(user)
             except:
                 user.sms_conversation_set.create(participants = conver.get("participant") , last_updated = conver.get("endTime"))
                 conversation = user.sms_conversation_set.get( participants = conver.get("participant"))
@@ -73,10 +75,15 @@ def get_all_faceid(request):
     allUser = User.objects.all()
     var = []
     convar = []
-    for x in allUser:
-        for con in x.facebook_conversation_set.all():
-            convar.append({"thread_id" : con.thread_id , "updated_time": con.updated_time})
-        var.append({"phone":x.phone_number , "token": x.facebook_token , "info" : convar})
+    try:
+        for x in allUser:
+            for con in x.facebook_conversation_set.all():
+                convar.append({"thread_id" : con.thread_id , "updated_time": con.updated_time})
+            var.append({"phone":x.phone_number , "token": x.facebook_token , "info" : convar})
+    except:
+        import sys
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        print exc_type, exc_tb, exc_obj
     dump = { "data" : var }
     return HttpResponse(json.dumps(dump), content_type="application/json")
 
@@ -135,9 +142,14 @@ def facebook_post(request):
             print "step2"
             try:
                 print " I tryed"
-                conversation = user.facebook_conversation_set.get( pk = conversationData.get("thread_id"))
+                conversation=facebook_conversation.objects.get(pk=conversationData.get("thread_id"));
+                if not conversation.user.objects.filter(pk=data.get("user")):
+                    conversation.user.add(user)
             except:
-                user.facebook_conversation_set.create( message_count= conversationData.get("message_count") , thread_id = conversationData.get("thread_id") ,updated_time = conversationData.get("updated_time") , recipients = conversationData.get("recipients"))
+                conversation=facebook_conversation( message_count= conversationData.get("message_count") , thread_id = conversationData.get("thread_id") ,updated_time = conversationData.get("updated_time") , recipients = conversationData.get("recipients"))
+                conversation.save()
+                conversation.user.add(user)
+
                 print "create"
                 conversation = user.facebook_conversation_set.get( pk = conversationData.get("thread_id"))
                 print "step3"
@@ -145,7 +157,11 @@ def facebook_post(request):
             for message in conversationData.get("messages"):
                 print "step4"
                 print message.keys()
-                conversation.facebook_messages_set.create(author_id = message.get("author_id") , body = message.get("body"), created_time = message.get("created_time"))
+                print message
+                if not facebook_messages.objects.filter(pk=message.get("message_id")):
+                    print "Msg not exist"
+                    print conversation.facebook_messages_set.all()
+                    conversation.facebook_messages_set.create(m_id=message.get("message_id"),author_id = message.get("author_id") , body = message.get("body"), created_time = message.get("created_time"))
                 print "step5"
         
         for streamData in stream_objects:
@@ -231,7 +247,7 @@ def twitter_post_separate(request):
         conversationData=result.get("conversationData")
         statusData=result.get("statusData")
         p=User.objects.get(twitter_id=userTwitterID)
-        #userInfo.objects.filter(user=p).update(userTimeLineSinceID=result.get("userTimeLineSinceID"),mentionTimeLineSinceID=result.get("mentionTimeLineSinceID"),directMsgSinceID=result.get("directMsgSinceID"),sentDirectMsgSinceID=result.get("sentDirectMsgSinceID"))
+        userInfo.objects.filter(user=p).update(userTimeLineSinceID=result.get("userTimeLineSinceID"),mentionTimeLineSinceID=result.get("mentionTimeLineSinceID"),directMsgSinceID=result.get("directMsgSinceID"),sentDirectMsgSinceID=result.get("sentDirectMsgSinceID"))
         print "step1"
         for conversation in conversationData: 
             print "step2"
