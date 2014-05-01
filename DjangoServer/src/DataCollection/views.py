@@ -100,7 +100,7 @@ def get_all_twitter(request):
             uf=userInfo.objects.get(user=x)
             var.append({"twitter_token": x.twitter_token ,"twitter_id": x.twitter_id , "twitter_secret": x.twitter_secret,"userTimeLineSinceID": uf.userTimeLineSinceID ,"mentionTimeLineSinceID": uf.mentionTimeLineSinceID , "directMsgSinceID": uf.directMsgSinceID,"sentDirectMsgSinceID":uf.sentDirectMsgSinceID})
         else:
-            empty=""
+            empty="1"
             var.append({"twitter_token": x.twitter_token ,"twitter_id": x.twitter_id , "twitter_secret": x.twitter_secret,"userTimeLineSinceID": empty ,"mentionTimeLineSinceID": empty , "directMsgSinceID": empty,"sentDirectMsgSinceID":empty})
     dump = { "data" : var }
     return HttpResponse(json.dumps(dump), content_type="application/json")
