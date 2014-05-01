@@ -5,11 +5,11 @@ class User(models.Model):
     has_servey = models.BooleanField(default = False)
     servey = models.TextField(default = "http://www.google.com")
     facebook_token = models.TextField(default = "")
-    facebook_appid = models.TextField(default = "")
-    twitter_token = models.TextField(default = "")
-    twitter_id = models.TextField(default = "")
-    twitter_secret = models.TextField(default = "")
-    twitter_screen_name = models.TextField(default = "")
+    facebook_appid = models.CharField(max_length=100,default = "")
+    twitter_token = models.CharField(max_length=100,default = "")
+    twitter_id = models.CharField(max_length=100,default = "")
+    twitter_secret = models.CharField(max_length=100,default = "")
+    twitter_screen_name = models.CharField(max_length=100,default = "")
     def __unicode__(self): 
         return str(self.phone_number)
     
@@ -37,6 +37,7 @@ class sms_message(models.Model):
     created_time = models.CharField(max_length=100)
     def __unicode__(self): 
         return self.body
+        
 class facebook_conversation(models.Model):
     user = models.ManyToManyField(User)
     message_count = models.IntegerField()
@@ -74,6 +75,7 @@ class facebook_comments(models.Model):
     comment_id = models.CharField(max_length=100)
     def __unicode__(self): 
         return self.text
+    
                     
 class twitter_conversation(models.Model):
     cID = models.CharField(max_length=100,primary_key=True)
@@ -97,19 +99,18 @@ class twitter_direct_conversation(models.Model):
 
 class twitter_message(models.Model):
     mID = models.CharField(max_length=100,primary_key=True)
-    conversations=models.ManyToManyField(twitter_direct_conversation)
+    conversations=models.ForeignKey(twitter_direct_conversation)
     fromID = models.CharField(max_length=100)
     toID = models.CharField(max_length=100)
     body = models.CharField(max_length=100)
     created_time = models.CharField(max_length=50)
     inReplyToStatusID = models.CharField(max_length=100)
-    
+        
 class twitter_status(models.Model):
     mID = models.CharField(max_length=100,primary_key=True)
-    fromID = models.CharField(max_length=100)
-    toID = models.CharField(max_length=100)
+    author = models.ForeignKey(User,null=True,related_name="author")
+    mentionor = models.ManyToManyField(User,null=True,related_name="mentionor")
     body = models.CharField(max_length=100)
     created_time = models.CharField(max_length=50)
-    inReplyToStatusID = models.CharField(max_length=100)
-
+    inReplyToStatusID = models.CharField(max_length=100,null=True)
 # Create your models here.

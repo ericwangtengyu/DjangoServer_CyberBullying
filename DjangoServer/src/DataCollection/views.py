@@ -1,8 +1,13 @@
 from DataCollection.models import User, twitter_direct_conversation, \
     twitter_conversation, twitter_message, sms_conversation, userInfo, \
-    twitter_status, facebook_conversation, facebook_messages
+    twitter_status, facebook_conversation, facebook_messages, facebook_comments, \
+    sms_message
+from django.core import serializers
+from django.db.models import Q
 from django.http import HttpResponse
+from django.http.response import StreamingHttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from itertools import chain
 import json
 @csrf_exempt
 def index(request):
@@ -97,7 +102,11 @@ def get_all_twitter(request):
     dump = { "data" : var }
     return HttpResponse(json.dumps(dump), content_type="application/json")
 
-
+def get_all_user(request):
+    allUser = User.objects.all()
+    data=serializers.serialize("json", allUser)
+    print data
+    return HttpResponse(data, content_type="application/json")
 
 @csrf_exempt    
 def make_user(request):
@@ -271,20 +280,80 @@ def twitter_post_separate(request):
                 print "step6" 
         for status in statusData:
             print "step7"
-            toIDStr=status.get("To")
             if twitter_status.objects.filter(mID=status.get("MID")):
                 continue
-            s=twitter_status(mID=status.get("MID"),fromID=status.get("From"),created_time=status.get("CreateTime"),body=status.get("Text"))
-            if toIDStr:
-                s.toID=toIDStr
-            str1=status.get("InReplyToStatusID")
-            if str1:
-                s.inReplyToStatusID=str1
-            print "step8"
+            s=twitter_status(mID=status.get("MID"),created_time=status.get("CreateTime"),body=status.get("Text"))
             s.save()
+            if User.objects.filter(twitter_id=status.get("From")):
+                s.author=User.objects.get(twitter_id=status.get("From"))  
+                
+            toIDStr=status.get("To")   
+            if toIDStr:
+                print "Mentionors:"
+                print toIDStr
+                strList=toIDStr.split(",")
+                for userID in strList:
+                    if User.objects.filter(twitter_id=userID):
+                        u=User.objects.get(twitter_id=userID)
+                        s.mentionor.add(u)
+            inReplyToIDStr=status.get("InReplyToStatusID")
+            if inReplyToIDStr:
+                print "inReplyToIDStr"
+                s.inReplyToStatusID=inReplyToIDStr
+                print s.inReplyToStatusID
+                s.save()
+            print "step8"
             print "step9"   
     except:
         import sys
         exc_type, exc_obj, exc_tb = sys.exc_info()
         print exc_type, exc_tb, exc_obj
     return HttpResponse('done')
+
+@csrf_exempt     
+def unify_collect(request):
+    result = json.loads(request.body)
+    phoneNum = result.get("phoneNum")
+    print phoneNum
+    startDate = result.get("startDate")
+    endDate = result.get("endDate")
+    user = User.objects.get(pk=phoneNum)
+    try:
+        print "Step1"
+        '''
+        Twitter part
+        '''
+        tDirectConvers = user.twitter_direct_conversation_set.filter(endTime__gte=startDate, endTime__lte=endDate)
+        tMessage = twitter_message.objects.filter(conversations__in=tDirectConvers)
+        print "Step2"
+        tStatus = twitter_status.objects.filter(created_time__gte=startDate, created_time__lte=endDate).filter(Q(mentionor__phone_number__exact=user.phone_number)|Q(author=user))
+        print "Step2.1"
+        '''
+        Facebook part
+        '''
+        fDirectConvers = user.facebook_conversation_set.filter(updated_time__gte=startDate, updated_time__lte=endDate)
+        fMessages = facebook_messages.objects.filter(conversation__in=fDirectConvers)
+        fActivity = user.facebook_activity_set.filter(updated_time__gte=startDate, updated_time__lte=endDate)
+        fComments = facebook_comments.objects.filter(activity__in=fActivity)
+        print "Step3"
+    
+        SMSConversation = user.sms_conversation_set.filter(last_updated__gte=startDate, last_updated__lte=endDate)
+        SMSMessage= sms_message.objects.filter(conversation__in=SMSConversation)
+        print "Step4"
+        t1=serializers.serialize("json", tDirectConvers)
+        t2=serializers.serialize("json", tMessage)
+        t3=serializers.serialize("json", tStatus)
+        f1=serializers.serialize("json", fDirectConvers)
+        f2=serializers.serialize("json", fMessages)
+        f3=serializers.serialize("json", fActivity)
+        f4=serializers.serialize("json", fComments)
+        s1=serializers.serialize("json", SMSConversation)
+        s2=serializers.serialize("json", SMSMessage)
+        print "Step5"
+        print type(t1)
+        data=list(chain(t1,t2,t3,f1,f2,f3,f4,s1,s2))
+    except:
+        import sys
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        print exc_type, exc_tb, exc_obj
+    return StreamingHttpResponse(data, content_type="application/json")

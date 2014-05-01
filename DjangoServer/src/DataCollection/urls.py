@@ -14,4 +14,6 @@ urlpatterns = patterns('',
     url(r'^posttwitter/$' , views.twitter_post , name= 'twitter' ),
     url(r'^posttwitterseparate/$' , views.twitter_post_separate , name= 'twitterSeparatepost' ),
     url(r'^makeuser/$' , views.make_user , name= 'makeuser' ),
+    url(r'^unifycollect/$' , views.unify_collect, name= 'unifycollect' ),
+    url(r'^getalluser/$' , views.get_all_user, name= 'getalluser' ),
 )
