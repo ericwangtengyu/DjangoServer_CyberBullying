@@ -7,7 +7,7 @@ from django.db.models import Q
 from django.http import HttpResponse
 from django.http.response import StreamingHttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from itertools import chain
+from django.utils import simplejson
 import json
 @csrf_exempt
 def index(request):
@@ -96,9 +96,12 @@ def get_all_twitter(request):
     allUser = User.objects.all()
     var = []
     for x in allUser:
-        uf=userInfo.objects.get(user=x)
-        var.append({"twitter_token": x.twitter_token ,"twitter_id": x.twitter_id , "twitter_secret": x.twitter_secret,"userTimeLineSinceID": uf.userTimeLineSinceID ,"mentionTimeLineSinceID": uf.mentionTimeLineSinceID , "directMsgSinceID": uf.directMsgSinceID,"sentDirectMsgSinceID":uf.sentDirectMsgSinceID})
-        #var.append({"twitter_token": x.twitter_token ,"twitter_id": x.twitter_id , "twitter_secret": x.twitter_secret})
+        if userInfo.objects.filter(user=x):
+            uf=userInfo.objects.get(user=x)
+            var.append({"twitter_token": x.twitter_token ,"twitter_id": x.twitter_id , "twitter_secret": x.twitter_secret,"userTimeLineSinceID": uf.userTimeLineSinceID ,"mentionTimeLineSinceID": uf.mentionTimeLineSinceID , "directMsgSinceID": uf.directMsgSinceID,"sentDirectMsgSinceID":uf.sentDirectMsgSinceID})
+        else:
+            empty=""
+            var.append({"twitter_token": x.twitter_token ,"twitter_id": x.twitter_id , "twitter_secret": x.twitter_secret,"userTimeLineSinceID": empty ,"mentionTimeLineSinceID": empty , "directMsgSinceID": empty,"sentDirectMsgSinceID":empty})
     dump = { "data" : var }
     return HttpResponse(json.dumps(dump), content_type="application/json")
 
@@ -340,20 +343,19 @@ def unify_collect(request):
         SMSConversation = user.sms_conversation_set.filter(last_updated__gte=startDate, last_updated__lte=endDate)
         SMSMessage= sms_message.objects.filter(conversation__in=SMSConversation)
         print "Step4"
-        t1=serializers.serialize("json", tDirectConvers)
-        t2=serializers.serialize("json", tMessage)
-        t3=serializers.serialize("json", tStatus)
-        f1=serializers.serialize("json", fDirectConvers)
-        f2=serializers.serialize("json", fMessages)
-        f3=serializers.serialize("json", fActivity)
-        f4=serializers.serialize("json", fComments)
-        s1=serializers.serialize("json", SMSConversation)
-        s2=serializers.serialize("json", SMSMessage)
+        t1= simplejson.loads(serializers.serialize("json", tDirectConvers))
+        t2= simplejson.loads(serializers.serialize("json", tMessage))
+        t3= simplejson.loads(serializers.serialize("json", tStatus))
+        f1= simplejson.loads(serializers.serialize("json", fDirectConvers))
+        f2= simplejson.loads(serializers.serialize("json", fMessages))
+        f3= simplejson.loads(serializers.serialize("json", fActivity))
+        f4= simplejson.loads(serializers.serialize("json", fComments))
+        s1= simplejson.loads(serializers.serialize("json", SMSConversation))
+        s2= simplejson.loads(serializers.serialize("json", SMSMessage))
         print "Step5"
-        print type(t1)
-        data=list(chain(t1,t2,t3,f1,f2,f3,f4,s1,s2))
+        jsonData=simplejson.dumps( {'twitterDirectConversation':t1, 'twitterMessage':t2,'twitterStatus':t3,'facebookDirectConversation':f1,'facebookMessage':f2,'facebookActivity':f3,'facebookComments':f4,'SMSConversation':s1,'SMSMessage':s2} )
     except:
         import sys
         exc_type, exc_obj, exc_tb = sys.exc_info()
         print exc_type, exc_tb, exc_obj
-    return StreamingHttpResponse(data, content_type="application/json")
+    return StreamingHttpResponse(jsonData, content_type="application/json")
