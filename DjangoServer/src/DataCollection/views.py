@@ -58,8 +58,6 @@ def postandroid(request):
         for conver in conversations:
             try:
                 conversation = sms_conversation.objects.get(participants=conver.get("participant"))
-                if not conversation.user.objects.filter(pk=data.get("user")):
-                    conversation.user.add(user)
             except:
                 user.sms_conversation_set.create(participants = conver.get("participant") , last_updated = conver.get("endTime"))
                 conversation = user.sms_conversation_set.get( participants = conver.get("participant"))
@@ -67,7 +65,7 @@ def postandroid(request):
                 try:
                     conversation.sms_message_set.get(created_time = message.get("createTime"))
                 except:
-                    conversation.sms_message_set.create(source = message.get("sPID") , recipient = message.get("dPID")  ,body = message.get("text") ,created_time = message.get("createTime"))
+                    conversation.sms_message_set.create(source = message.get("sPID") , recipient = message.get("dPID")  ,body = message.get("text") ,created_time = message.get("createTime"), key = str(message.get("sPID") + "_" + message.get("createTime")))
     except:
         import sys
         exc_type, exc_obj,exc_tb = sys.exc_info()
@@ -173,7 +171,7 @@ def facebook_post(request):
                 if not facebook_messages.objects.filter(pk=message.get("message_id")):
                     print "Msg not exist"
                     print conversation.facebook_messages_set.all()
-                    conversation.facebook_messages_set.create(m_id=message.get("message_id"),author_id = message.get("author_id") , body = message.get("body"), created_time = message.get("created_time"))
+                    conversation.facebook_messages_set.create(mID=message.get("message_id"),author_id = message.get("author_id") , body = message.get("body"), created_time = message.get("created_time"))
                 print "step5"
         
         for streamData in stream_objects:
@@ -279,7 +277,7 @@ def twitter_post_separate(request):
             for message in messages:
                 print "step5"
                 if not twitter_message.objects.filter(mID=message.get("MID")):
-                    c.twitter_message_set.create(mID=message.get("MID"),fromID=message.get("From"),created_time=message.get("CreateTime"),body=message.get("Text"))    
+                    c.twitter_message_set.create(mID=message.get("MID"),fromID=message.get("From"),toID=message.get("To"),created_time=message.get("CreateTime"),body=message.get("Text")) 
                 print "step6" 
         for status in statusData:
             print "step7"
@@ -288,8 +286,10 @@ def twitter_post_separate(request):
             s=twitter_status(mID=status.get("MID"),created_time=status.get("CreateTime"),body=status.get("Text"))
             s.save()
             if User.objects.filter(twitter_id=status.get("From")):
-                s.author=User.objects.get(twitter_id=status.get("From"))  
-                
+                print("Get here")
+                s.author=User.objects.get(twitter_id=status.get("From"))
+                print s.author
+                s.save()
             toIDStr=status.get("To")   
             if toIDStr:
                 print "Mentionors:"

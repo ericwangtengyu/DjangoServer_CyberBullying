@@ -33,6 +33,7 @@ class sms_message(models.Model):
     conversation = models.ForeignKey(sms_conversation)
     source = models.CharField(max_length=100)
     recipient = models.CharField(max_length=100)
+    #key= models.CharField(primary_key=True , max_length=50)
     body = models.TextField()
     created_time = models.CharField(max_length=100)
     def __unicode__(self): 
@@ -49,6 +50,7 @@ class facebook_conversation(models.Model):
         
         
 class facebook_messages(models.Model):
+    mID=models.CharField(max_length=100,primary_key=True)
     conversation = models.ForeignKey(facebook_conversation)
     author_id = models.CharField(max_length=100)
     body = models.CharField(max_length=100)
