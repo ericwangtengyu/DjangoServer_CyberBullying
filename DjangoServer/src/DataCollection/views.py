@@ -122,36 +122,52 @@ def get_all_user(request):
     print data
     return HttpResponse(data, content_type="application/json")
 
+	
+	
+# Stops a user from having two sets of survey data if the re-register	
+def make_or_remake(phone_number):
+	try:
+		user = user.objects.get(phone_number = phone_number)
+		servey = SurveyData.objects.get(user = user)
+	except:
+		surveydata = SurveyData(user = u)
+		surveydata.save()
+	finally:
+		return HttpResponse('PASS')
+		
+		
 @csrf_exempt    
 def make_user(request):
-    data = json.loads(request.body)
-    print data
-    try:
-        u = User( phone_number = data.get("phone_number") , facebook_token = data.get("facebook_token") , facebook_appid = data.get("facebook_appid") , twitter_token = data.get("twitter_token") , twitter_secret = data.get("twitter_secret") , twitter_screen_name = data.get("twitter_screen_name"), twitter_id = data.get("twitter_id"))   
-        u.save()
-        surveydata = SurveyData(user = u)
-        surveydata.save()
-        user_info=userInfo(user=u,userTimeLineSinceID=1,mentionTimeLineSinceID=1,directMsgSinceID=1,sentDirectMsgSinceID=1)  
-        user_info.save()
-    except:
-        try:
-            u = User( phone_number = data.get("phone_number") , twitter_token = data.get("twitter_token") , twitter_secret = data.get("twitter_secret") , twitter_screen_name = data.get("twitter_screen_name"), twitter_id = data.get("twitter_id"))   
-            u.save()
-            user_info=userInfo(user=u,userTimeLineSinceID=1,mentionTimeLineSinceID=1,directMsgSinceID=1,sentDirectMsgSinceID=1)  
-            user_info.save()
-        except:
-            try:
-                u = User( phone_number = data.get("phone_number") , facebook_token = data.get("facebook_token") , facebook_appid = data.get("facebook_appid"))   
-                u.save()
-            except:
-                try:
-                    u = User( phone_number = data.get("phone_number"))   
-                    u.save()
-                except:
-                    return HttpResponse('FAIL')
-                    print 'Exception: Could not parse JSON'
+	data = json.loads(request.body)
+	print data
+	try:
+		u = User( phone_number = data.get("phone_number") , facebook_token = data.get("facebook_token") , facebook_appid = data.get("facebook_appid") , twitter_token = data.get("twitter_token") , twitter_secret = data.get("twitter_secret") , twitter_screen_name = data.get("twitter_screen_name"), twitter_id = data.get("twitter_id"))   
+		u.save()
+		user_info=userInfo(user=u,userTimeLineSinceID=1,mentionTimeLineSinceID=1,directMsgSinceID=1,sentDirectMsgSinceID=1)  
+		user_info.save()
+		make_or_remake(data.get("phone_number"))
+	except:
+		try:
+			u = User( phone_number = data.get("phone_number") , twitter_token = data.get("twitter_token") , twitter_secret = data.get("twitter_secret") , twitter_screen_name = data.get("twitter_screen_name"), twitter_id = data.get("twitter_id"))   
+			u.save()
+			user_info=userInfo(user=u,userTimeLineSinceID=1,mentionTimeLineSinceID=1,directMsgSinceID=1,sentDirectMsgSinceID=1)  
+			user_info.save()
+			make_or_remake(data.get("phone_number"))
+		except:
+			try:
+				u = User( phone_number = data.get("phone_number") , facebook_token = data.get("facebook_token") , facebook_appid = data.get("facebook_appid"))   
+				u.save()
+				make_or_remake(data.get("phone_number"))
+			except:
+				try:
+					u = User( phone_number = data.get("phone_number"))   
+					u.save()
+					make_or_remake(data.get("phone_number"))
+				except:
+					return HttpResponse('FAIL')
+					print 'Exception: Could not parse JSON'
 	
-    return HttpResponse('PASS')
+	return HttpResponse('PASS')
 
 
 
