@@ -1,7 +1,8 @@
 from DataCollection.models import User, twitter_direct_conversation, \
     twitter_conversation, twitter_message, sms_conversation, userInfo, \
     twitter_status, facebook_conversation, facebook_messages, facebook_comments, \
-    sms_message
+    sms_message,SurveyData
+from survey.models import Survey
 from django.core import serializers
 from django.db.models import Q
 from django.http import HttpResponse
@@ -9,6 +10,11 @@ from django.http.response import StreamingHttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import simplejson
 import json
+
+
+
+ip = 'http://10.0.1.2:7777/'
+
 @csrf_exempt
 def index(request):
     return HttpResponse("Hello, world. You're at the poll index.")
@@ -33,26 +39,32 @@ def newToken(request):
 
     
 @csrf_exempt
-def servey(request):
-    try:
-        data=json.loads(request.body)
-        user = User.objects.get(phone_number = data.get("user"))
-        #user.has_servey = True
-        user.save()
-        print user.has_servey
-        if(user.has_servey):
-            return HttpResponse(user.servey)
-        else:
-            return HttpResponse("null")
-    except:
-        return HttpResponse("null")
+def survey(request):
+	try:
+		data=json.loads(request.body)
+		phone_number = data.get("user")
+		user = User.objects.get(phone_number = phone_number)
+		survey = Survey.objects.latest('created_date')
+		surveydata_object = SurveyData.objects.get(user = user)
+		surveydata_string = surveydata_object.surveydata
+		surveydata_dic = eval(str(surveydata_string))
+		has_survey = surveydata_dic.get(str(survey.id),'true')
+	except:
+		import sys
+		exc_type, exc_obj,exc_tb = sys.exc_info()
+		print exc_type, exc_obj,exc_tb
+		return HttpResponse("null")
+	else:
+		if has_survey is 'true':
+			theIP = ip+'survey/'+str(survey.id)+'/'+phone_number+'/'
+			return HttpResponse(theIP)
+		else:
+			return HttpResponse("null")
                                 
 @csrf_exempt    
 def postandroid(request):
-    print 'Post from Android'
     try:
         data=json.loads(request.body)
-        print data
         user = User.objects.get( phone_number = data.get("user"))
         conversations = data.get("conversation")
         for conver in conversations:
@@ -65,12 +77,13 @@ def postandroid(request):
                 try:
                     conversation.sms_message_set.get(created_time = message.get("createTime"))
                 except:
-                    conversation.sms_message_set.create(source = message.get("sPID") , recipient = message.get("dPID")  ,body = message.get("text") ,created_time = message.get("createTime"), key = str(message.get("sPID") + "_" + message.get("createTime")))
+                    conversation.sms_message_set.create(source = message.get("sPID") , recipient = message.get("dPID")  ,body = message.get("text") ,created_time = message.get("createTime"))
     except:
         import sys
         exc_type, exc_obj,exc_tb = sys.exc_info()
         print exc_type, exc_obj,exc_tb
         print 'Exception: Could not parse JSON'
+        return HttpResponse('Fail')
     #return HttpResponseRedirect(reverse('polls:results', args=(p.id,)))
     return HttpResponse('worked')
     
@@ -116,6 +129,8 @@ def make_user(request):
     try:
         u = User( phone_number = data.get("phone_number") , facebook_token = data.get("facebook_token") , facebook_appid = data.get("facebook_appid") , twitter_token = data.get("twitter_token") , twitter_secret = data.get("twitter_secret") , twitter_screen_name = data.get("twitter_screen_name"), twitter_id = data.get("twitter_id"))   
         u.save()
+        surveydata = SurveyData(user = u)
+        surveydata.save()
         user_info=userInfo(user=u,userTimeLineSinceID=1,mentionTimeLineSinceID=1,directMsgSinceID=1,sentDirectMsgSinceID=1)  
         user_info.save()
     except:
@@ -135,6 +150,7 @@ def make_user(request):
                 except:
                     return HttpResponse('FAIL')
                     print 'Exception: Could not parse JSON'
+	
     return HttpResponse('PASS')
 
 

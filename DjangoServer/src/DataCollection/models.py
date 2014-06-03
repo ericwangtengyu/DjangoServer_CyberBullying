@@ -2,8 +2,7 @@ from django.db import models
 
 class User(models.Model):
     phone_number = models.CharField(max_length=12, primary_key=True)
-    has_servey = models.BooleanField(default = False)
-    servey = models.TextField(default = "http://www.google.com")
+    survey = models.TextField(default = "http://www.google.com")
     facebook_token = models.TextField(default = "")
     facebook_appid = models.CharField(max_length=100,default = "")
     twitter_token = models.CharField(max_length=100,default = "")
@@ -12,7 +11,13 @@ class User(models.Model):
     twitter_screen_name = models.CharField(max_length=100,default = "")
     def __unicode__(self): 
         return str(self.phone_number)
-    
+
+class SurveyData(models.Model):
+	user = models.ForeignKey(User)
+	surveydata = models.TextField(default =  "{}")
+	def __unicode__(self):
+		return str(self.surveydata)
+	   
 class userInfo(models.Model):
     user=models.OneToOneField(User, primary_key=True)
     userTimeLineSinceID=models.CharField(max_length=100,default=1)
