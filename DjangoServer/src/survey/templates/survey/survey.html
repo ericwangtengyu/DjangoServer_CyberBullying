@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content= "width=device-width, inital-scale=1.0"/>
+
+</head>
+
+<h1>{{survey.title}}</h1>
+
+{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+
+<form action="{% url 'survey:answer' survey.id user_id %}" method="post">
+{% csrf_token %}
+{% for  question in survey.question_set.all %}
+    <ul>
+        <li> {{ question.text }}</li>
+       
+        {% if question.atype == 0 %}
+            <textarea name = "{{ question.id }}" id = "{{ question.id}}">
+            </textarea><br />
+        {% endif %}
+       
+        {% if question.atype == 1 %}
+            {% for choice in question.choice_set.all %}
+      
+                <input type="radio" name="{{ question.id }}" id="choice{{ forloop.counter }}{{ forloop.parentloop.counter}}" value="{{ choice.id }}" />
+                <label for="choice{{ forloop.counter }}{{ forloop.parentloop.counter}}">{{ choice.choice_text }}</label><br />
+            {% endfor %}
+        {% endif %}
+        
+        {% if question.atype == 2 %}
+            {% for choice in question.choice_set.all %}
+                <input type="checkbox" name="{{ question.id }}" id="choice{{ forloop.counter }}{{ forloop.parentloop.counter}}" value="{{ choice.id }}" />
+                <label for="choice{{ forloop.counter }}{{ forloop.parentloop.counter}}">{{ choice.choice_text }}</label><br />
+            {% endfor %} 
+        {% endif %}
+    </ul>
+{% endfor %}
+<input type="submit" value="Submit" />
+</form>
+
+</html>
+
+
