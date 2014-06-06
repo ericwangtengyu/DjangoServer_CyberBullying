@@ -10,6 +10,7 @@ from django.shortcuts import get_object_or_404,render
 from django.core import serializers
 from .models import Survey, Question,Choice
 from DataCollection.models import User, SurveyData
+from django.core.mail import send_mail
 import json
 
 def survey(request , survey_id , user_id):
@@ -17,7 +18,11 @@ def survey(request , survey_id , user_id):
     return render(request , 'survey/survey.html',{'survey':survey,
 													'user_id':user_id})
     
-
+def sendemail(request,survey_id,user_id):
+    text = request.POST["textbox"]
+    text = text + "\n \n user_id " + str(user_id) + "\n \nsurvey_id " + str(survey_id)
+    send_mail("DATA ERROR" ,text,"mclapp08@gmail.com",["llclaptrapll@gmail.com"])
+    return HttpResponse("Thank you problem will be taken care of asap")
 def answer(request,survey_id,user_id):
 	survey = get_object_or_404(Survey, pk = survey_id )
 	for question in survey.question_set.all():
@@ -54,6 +59,9 @@ def answer(request,survey_id,user_id):
 			question.answer = request.POST[str(question.id)]
 			question.save()
 	jsonData = serializers.serialize("json",survey.question_set.all())
+	qs = survey.question_set.filter(answer = "No")
+	if qs:
+	    return HttpResponseRedirect(reverse('survey:email', args=(survey.id,user_id)))
 	try:
 		user = User.objects.get(phone_number = user_id)
 		surveydata_object = SurveyData.objects.get(user = user)
@@ -74,6 +82,8 @@ def results(request,survey_id):
     survey = get_object_or_404(Survey, pk = survey_id )
     return render(request,'survey/results.html',{'survey':survey})    
             
-            
+def email(request,survey_id,user_id):
+    return render(request,'survey/email.html',{'survey_id':survey_id,
+                                                "user_id":user_id})    
             
     

@@ -2,10 +2,11 @@ from django.conf.urls import patterns, url
 from DataCollection import views
 
 urlpatterns = patterns('',
-    url(r'^$', views.index, name='index'),
+    url(r'^$', views.notUser, name='notUser'),
     url(r'^postandroid/$', views.postandroid, name='postandroid'),
     url(r'^gethelp/$', views.getHelp, name='Help'),
     url(r'^newtoken/$', views.newToken, name='newToken'),
+    url(r'^withdraw/$', views.withdraw, name='withdraw'),
     url(r'^reportbullying/$', views.reportBulling, name='reportBulling'),
     url(r'^survey/$', views.survey, name='survey'), 
     url(r'^getfacetoken/$' , views.get_all_faceid , name= 'getfacetoken' ),

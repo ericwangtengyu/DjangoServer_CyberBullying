@@ -2,22 +2,25 @@ from DataCollection.models import User, twitter_direct_conversation, \
     twitter_conversation, twitter_message, sms_conversation, userInfo, \
     twitter_status, facebook_conversation, facebook_messages, facebook_comments, \
     sms_message,SurveyData
-from survey.models import Survey
+from survey.models import Survey,Question,Choice
 from django.core import serializers
 from django.db.models import Q
 from django.http import HttpResponse
 from django.http.response import StreamingHttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import simplejson
+from django.core.mail import send_mail
 import json
+import datetime
+from dateutil import parser
 
 
 
-ip = 'http://10.0.1.2:7777/'
+ip = 'http://172.23.1.193:7777/'
 
 @csrf_exempt
-def index(request):
-    return HttpResponse("Hello, world. You're at the poll index.")
+def notUser(request):
+    return HttpResponse("phone number did not match any users" )
 
 @csrf_exempt
 def getHelp(request):
@@ -36,30 +39,114 @@ def newToken(request):
         return HttpResponse("worked")
     except:
         return HttpResponse("null")
-
-    
+@csrf_exempt
+def withdraw(request):
+    try:
+        data=json.loads(request.body)
+        text = data.get("user")
+        send_mail("WithDraw" ,text,"mclapp08@gmail.com",["llclaptrapll@gmail.com"])
+    except:
+        HttpResponse("sorry try again later")
+    return HttpResponse("Your out")
+        
 @csrf_exempt
 def survey(request):
-	try:
-		data=json.loads(request.body)
-		phone_number = data.get("user")
-		user = User.objects.get(phone_number = phone_number)
-		survey = Survey.objects.latest('created_date')
-		surveydata_object = SurveyData.objects.get(user = user)
-		surveydata_string = surveydata_object.surveydata
-		surveydata_dic = eval(str(surveydata_string))
-		has_survey = surveydata_dic.get(str(survey.id),'true')
-	except:
-		import sys
-		exc_type, exc_obj,exc_tb = sys.exc_info()
-		print exc_type, exc_obj,exc_tb
-		return HttpResponse("null")
-	else:
-		if has_survey is 'true':
-			theIP = ip+'survey/'+str(survey.id)+'/'+phone_number+'/'
-			return HttpResponse(theIP)
-		else:
-			return HttpResponse("null")
+    try:
+        data=json.loads(request.body)
+        phone_number = data.get("user")
+        user = User.objects.get(phone_number = phone_number)
+    except:
+        import sys
+        exc_type, exc_obj,exc_tb = sys.exc_info()
+        print exc_type, exc_obj,exc_tb
+        print 'Exception: Could not parse JSON'
+        HttpResponse(ip+"/DateCollection/")
+    else:
+        thedatetime = datetime.datetime.now().strftime("%Y:%m:%d:%H:%M:%S")
+        title = phone_number + "/" + thedatetime
+        survey = Survey(title = title)
+        survey.save()
+        textmessagelist = []
+        for conver in user.sms_conversation_set.all():
+            for message in conver.sms_message_set.all():
+                if message.from_last_day():
+                    textmessagelist.append("  recipient: " + message.recipient)
+                    textmessagelist.append("\t message: " + message.body)
+        facemessagelist = []
+        print("step3")
+        for faceConver in user.facebook_conversation_set.all():
+            print("step3.1")
+            for faceMessage in faceConver.facebook_messages_set.all():
+                print("step3.2")
+                print(faceMessage.body)
+                if faceMessage.from_last_day():
+                    print("step3.3")
+                    facemessagelist.append("  text: " + faceMessage.body)
+        faceactlist = []
+        for faceact in user.facebook_activity_set.all():
+            if faceact.from_last_day():
+                faceactlist.append("  " + faceact.description)
+        twitterStatus = []
+        qs = list(twitter_status.objects.filter(author = user))
+        for twitterstatus in qs:
+            print("step5.1")
+            if twitterstatus.from_last_day():
+                print("step5.2")
+                twitterStatus.append("   twitter status :" + twitterstatus.body + "\n")
+        print(textmessagelist)
+        if not textmessagelist:
+            textmessagelist.append("No text messages sent in last day")
+        text = "Text messages form last day: \n" + "\n".join(textmessagelist)
+        q1 = survey.question_set.create(text = text,atype=1)
+        y1 = q1.choice_set.create(choice_text="Yes")
+        n1 = q1.choice_set.create(choice_text="No")
+        print(facemessagelist)
+        if not facemessagelist:
+            facemessagelist.append("No facebook instant massages from last day")
+        text2 = "Facebook message form last day: \n" + "\n".join(facemessagelist)
+        q2 = survey.question_set.create(text = text2,atype=1)
+        y2 = q2.choice_set.create(choice_text="Yes")
+        n2 = q2.choice_set.create(choice_text="No")
+        print(faceactlist)
+        if not faceactlist:
+            faceactlist.append("No facebook activities from last day")
+        text4 = "Facebook activities from last day: \n" + "\n".join(faceactlist)
+        q4 = survey.question_set.create(text = text4,atype=1)
+        y4 = q4.choice_set.create(choice_text="Yes")
+        n4 = q4.choice_set.create(choice_text="No")
+        if not twitterStatus:
+            twitterStatus.append("No new twitter status")
+        text3 = "Twitter status form last day: \n" + "\n".join(twitterStatus)
+        q3 = survey.question_set.create(text = text3,atype=1)
+        y3 = q3.choice_set.create(choice_text="Yes")
+        n3 = q3.choice_set.create(choice_text="No")
+        print("step9")
+        theIP = ip+'survey/'+str(survey.id)+'/'+phone_number+'/'
+        return HttpResponse(theIP)
+
+    
+#@csrf_exempt
+#def survey(request):
+	#try:
+		#data=json.loads(request.body)
+		#phone_number = data.get("user")
+		#user = User.objects.get(phone_number = phone_number)
+		#survey = Survey.objects.latest('created_date')
+		#surveydata_object = SurveyData.objects.get(user = user)
+		#surveydata_string = surveydata_object.surveydata
+		#surveydata_dic = eval(str(surveydata_string))
+		#has_survey = surveydata_dic.get(str(survey.id),'true')
+	#except:
+		#import sys
+		#exc_type, exc_obj,exc_tb = sys.exc_info()
+		#print exc_type, exc_obj,exc_tb
+		#return HttpResponse("null")
+	#else:
+		#if has_survey is 'true':
+			#theIP = ip+'survey/'+str(survey.id)+'/'+phone_number+'/'
+			#return HttpResponse(theIP)
+		#else:
+			#return HttpResponse("null")
                                 
 @csrf_exempt    
 def postandroid(request):
@@ -75,9 +162,10 @@ def postandroid(request):
                 conversation = user.sms_conversation_set.get( participants = conver.get("participant"))
             for message in conver.get("messages"):
                 try:
-                    conversation.sms_message_set.get(created_time = message.get("createTime"))
+                    createdTime = datetime.datetime.fromtimestamp(long(message.get("createTime"))).strftime('%Y-%m-%d %H:%M:%S')
+                    conversation.sms_message_set.get(created_time = createdTime)
                 except:
-                    conversation.sms_message_set.create(source = message.get("sPID") , recipient = message.get("dPID")  ,body = message.get("text") ,created_time = message.get("createTime"))
+                    conversation.sms_message_set.create(source = message.get("sPID") , recipient = message.get("dPID")  ,body = message.get("text") ,created_time = createdTime)
     except:
         import sys
         exc_type, exc_obj,exc_tb = sys.exc_info()
@@ -126,14 +214,14 @@ def get_all_user(request):
 	
 # Stops a user from having two sets of survey data if the re-register	
 def make_or_remake(phone_number):
-	try:
-		user = user.objects.get(phone_number = phone_number)
-		servey = SurveyData.objects.get(user = user)
-	except:
-		surveydata = SurveyData(user = u)
-		surveydata.save()
-	finally:
-		return HttpResponse('PASS')
+    try:
+        user = User.objects.get(phone_number = phone_number)
+        servey = SurveyData.objects.get(user = user)
+    except:
+        surveydata = SurveyData(user = user)
+        surveydata.save()
+    finally:
+        return HttpResponse('PASS')
 		
 		
 @csrf_exempt    
@@ -203,7 +291,8 @@ def facebook_post(request):
                 if not facebook_messages.objects.filter(pk=message.get("message_id")):
                     print "Msg not exist"
                     print conversation.facebook_messages_set.all()
-                    conversation.facebook_messages_set.create(mID=message.get("message_id"),author_id = message.get("author_id") , body = message.get("body"), created_time = message.get("created_time"))
+                    createdTime = datetime.datetime.fromtimestamp(message.get("created_time")).strftime('%Y-%m-%d %H:%M:%S')
+                    conversation.facebook_messages_set.create(mID=message.get("message_id"),author_id = message.get("author_id") , body = message.get("body"), created_time = createdTime)
                 print "step5"
         
         for streamData in stream_objects:
@@ -214,7 +303,8 @@ def facebook_post(request):
             mess = streamData.get("message")
             if mess == None:
                 mess = ""
-            user.facebook_activity_set.create( post_id = streamData.get("post_id"), updated_time = streamData.get("updated_time"), source_id = streamData.get("source_id"), description = desc, message = mess, actor_id = streamData.get("actor_id"), isPrimaryPost = str(len(streamData.get("Comments")) != 0))
+            updated_time = datetime.datetime.fromtimestamp(streamData.get("updated_time")).strftime('%Y-%m-%d %H:%M:%S')
+            user.facebook_activity_set.create( post_id = streamData.get("post_id"), updated_time = updated_time, source_id = streamData.get("source_id"), description = desc, message = mess, actor_id = streamData.get("actor_id"), isPrimaryPost = str(len(streamData.get("Comments")) != 0))
             print "step_2.5"
             activity = user.facebook_activity_set.get( post_id = streamData.get("post_id") )
             print "step_3"
@@ -264,7 +354,8 @@ def twitter_post(request):
             for message in messages:
                 print "step5"
                 toIDStr=message.get("To")
-                m=twitter_message(mID=message.get("MID"),fromID=message.get("From"),created_time=message.get("CreateTime"),body=message.get("Text"))
+                datetime = parser.parse(message.get("CreateTime")).strftime('%Y-%m-%d %H:%M:%S')
+                m=twitter_message(mID=message.get("MID"),fromID=message.get("From"),created_time=datetime,body=message.get("Text"))
                 if toIDStr:
                     m.toID=toIDStr
                 str1=message.get("InReplyToStatusID")
@@ -309,13 +400,15 @@ def twitter_post_separate(request):
             for message in messages:
                 print "step5"
                 if not twitter_message.objects.filter(mID=message.get("MID")):
+                    datetime = parser.parse(message.get("CreateTime")).strftime('%Y-%m-%d %H:%M:%S')
                     c.twitter_message_set.create(mID=message.get("MID"),fromID=message.get("From"),toID=message.get("To"),created_time=message.get("CreateTime"),body=message.get("Text")) 
                 print "step6" 
         for status in statusData:
             print "step7"
             if twitter_status.objects.filter(mID=status.get("MID")):
                 continue
-            s=twitter_status(mID=status.get("MID"),created_time=status.get("CreateTime"),body=status.get("Text"))
+            datetime = parser.parse(status.get("CreateTime")).strftime('%Y-%m-%d %H:%M:%S')
+            s=twitter_status(mID=status.get("MID"),created_time=datetime,body=status.get("Text"))
             s.save()
             if User.objects.filter(twitter_id=status.get("From")):
                 print("Get here")

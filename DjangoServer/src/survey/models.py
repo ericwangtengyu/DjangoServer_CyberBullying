@@ -20,7 +20,7 @@ class Survey(models.Model):
 
 class Question(models.Model):
     atype = models.IntegerField("Answer type",choices = choices, default = 0)
-    text = models.CharField("Question",max_length = 500)
+    text = models.CharField("Question",max_length = 1000)
     answer = models.CharField(max_length = 500,default = "0")
     survey = models.ForeignKey(Survey)
     def __unicode__(self):

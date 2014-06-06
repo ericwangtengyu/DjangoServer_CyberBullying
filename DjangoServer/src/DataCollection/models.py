@@ -1,4 +1,6 @@
 from django.db import models
+from django.utils import timezone
+import datetime
 
 class User(models.Model):
     phone_number = models.CharField(max_length=12, primary_key=True)
@@ -40,9 +42,11 @@ class sms_message(models.Model):
     recipient = models.CharField(max_length=100)
     #key= models.CharField(primary_key=True , max_length=50)
     body = models.TextField()
-    created_time = models.CharField(max_length=100)
+    created_time = models.DateTimeField()
     def __unicode__(self): 
         return self.body
+    def from_last_day(self):
+        return self.created_time >= timezone.now() - datetime.timedelta(days=1)
         
 class facebook_conversation(models.Model):
     user = models.ManyToManyField(User)
@@ -59,14 +63,16 @@ class facebook_messages(models.Model):
     conversation = models.ForeignKey(facebook_conversation)
     author_id = models.CharField(max_length=100)
     body = models.CharField(max_length=100)
-    created_time = models.CharField(max_length=50)
+    created_time = models.DateTimeField()
     def __unicode__(self): 
         return self.body
+    def from_last_day(self):
+        return self.created_time >= timezone.now() - datetime.timedelta(days=1)
 
 class facebook_activity(models.Model):
     user = models.ForeignKey(User)
-    post_id = models.CharField(max_length=100)
-    updated_time = models.CharField(max_length=50)
+    post_id = models.CharField(max_length=100,unique = True)
+    updated_time = models.DateTimeField()
     source_id = models.CharField(max_length=100)
     description = models.TextField()
     message = models.TextField()
@@ -74,6 +80,8 @@ class facebook_activity(models.Model):
     isPrimaryPost = models.CharField(max_length=100)
     def __unicode__(self): 
         return self.post_id + ", " + self.description + ", " + self.message
+    def from_last_day(self):
+        return self.updated_time >= timezone.now() - datetime.timedelta(days=1)
         
 class facebook_comments(models.Model):
     activity = models.ForeignKey(facebook_activity)
@@ -110,14 +118,18 @@ class twitter_message(models.Model):
     fromID = models.CharField(max_length=100)
     toID = models.CharField(max_length=100)
     body = models.CharField(max_length=100)
-    created_time = models.CharField(max_length=50)
+    created_time = models.DateTimeField()
     inReplyToStatusID = models.CharField(max_length=100)
-        
+    def from_last_day(self):
+        return self.created_time >= timezone.now() - datetime.timedelta(days=1)        
+
 class twitter_status(models.Model):
     mID = models.CharField(max_length=100,primary_key=True)
     author = models.ForeignKey(User,null=True,related_name="author")
     mentionor = models.ManyToManyField(User,null=True,related_name="mentionor")
     body = models.CharField(max_length=100)
-    created_time = models.CharField(max_length=50)
+    created_time = models.DateTimeField()
     inReplyToStatusID = models.CharField(max_length=100,null=True)
+    def from_last_day(self):
+        return self.created_time >= timezone.now() - datetime.timedelta(days=1)        
 # Create your models here.

@@ -12,8 +12,7 @@
 <form action="{% url 'survey:answer' survey.id user_id %}" method="post">
 {% csrf_token %}
 {% for  question in survey.question_set.all %}
-    <ul>
-        <li> {{ question.text }}</li>
+        <pre>{{ question.text }}</pre>
        
         {% if question.atype == 0 %}
             <textarea name = "{{ question.id }}" id = "{{ question.id}}">
@@ -34,7 +33,6 @@
                 <label for="choice{{ forloop.counter }}{{ forloop.parentloop.counter}}">{{ choice.choice_text }}</label><br />
             {% endfor %} 
         {% endif %}
-    </ul>
 {% endfor %}
 <input type="submit" value="Submit" />
 </form>
