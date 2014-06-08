@@ -38,6 +38,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'DataCollection',
     'survey',
+    'ios_notifications',
 )
 
 MIDDLEWARE_CLASSES = (

@@ -10,4 +10,5 @@ urlpatterns = patterns('',
     url(r'^DataCollection/', include('DataCollection.urls')),
     url(r'^admin/', include(admin.site.urls)),
     url(r'^survey/',include('survey.urls',namespace="survey")),
+    url(r'^ios-notifications/', include('ios_notifications.urls')),
 )
