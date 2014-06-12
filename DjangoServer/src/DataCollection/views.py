@@ -8,15 +8,19 @@ from django.db.models import Q
 from django.http import HttpResponse
 from django.http.response import StreamingHttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.utils import simplejson
+from django.utils import simplejson, encoding
 from django.core.mail import send_mail
+
 import json
 import datetime
+
+from simplecrypt import encrypt,decrypt
 from dateutil import parser
 
 
 
 ip = 'http://172.23.1.193:7777/'
+key = 'This_is%a#made^up*K3y'
 
 @csrf_exempt
 def notUser(request):
@@ -71,17 +75,12 @@ def survey(request):
             for message in conver.sms_message_set.all():
                 if message.from_last_day():
                     textmessagelist.append("  recipient: " + message.recipient)
-                    textmessagelist.append("\t message: " + message.body)
+                    textmessagelist.append("\t message: " + decrypt(key,message.body))
         facemessagelist = []
-        print("step3")
         for faceConver in user.facebook_conversation_set.all():
-            print("step3.1")
             for faceMessage in faceConver.facebook_messages_set.all():
-                print("step3.2")
-                print(faceMessage.body)
                 if faceMessage.from_last_day():
-                    print("step3.3")
-                    facemessagelist.append("  text: " + faceMessage.body)
+                    facemessagelist.append("  text: " + decrypt(key,faceMessage.body))
         faceactlist = []
         for faceact in user.facebook_activity_set.all():
             if faceact.from_last_day():
@@ -89,9 +88,7 @@ def survey(request):
         twitterStatus = []
         qs = list(twitter_status.objects.filter(author = user))
         for twitterstatus in qs:
-            print("step5.1")
             if twitterstatus.from_last_day():
-                print("step5.2")
                 twitterStatus.append("   twitter status :" + twitterstatus.body + "\n")
         print(textmessagelist)
         if not textmessagelist:
@@ -161,11 +158,12 @@ def postandroid(request):
                 user.sms_conversation_set.create(participants = conver.get("participant") , last_updated = conver.get("endTime"))
                 conversation = user.sms_conversation_set.get( participants = conver.get("participant"))
             for message in conver.get("messages"):
+                createdTime = datetime.datetime.fromtimestamp(long(message.get("createTime"))).strftime('%Y-%m-%d %H:%M:%S')
+                text = encrypt(key,message.get("text"))
                 try:
-                    createdTime = datetime.datetime.fromtimestamp(long(message.get("createTime"))).strftime('%Y-%m-%d %H:%M:%S')
                     conversation.sms_message_set.get(created_time = createdTime)
                 except:
-                    conversation.sms_message_set.create(source = message.get("sPID") , recipient = message.get("dPID")  ,body = message.get("text") ,created_time = createdTime)
+                    conversation.sms_message_set.create(source = message.get("sPID") , recipient = message.get("dPID")  ,body = text ,created_time = createdTime)
     except:
         import sys
         exc_type, exc_obj,exc_tb = sys.exc_info()
@@ -292,7 +290,10 @@ def facebook_post(request):
                     print "Msg not exist"
                     print conversation.facebook_messages_set.all()
                     createdTime = datetime.datetime.fromtimestamp(message.get("created_time")).strftime('%Y-%m-%d %H:%M:%S')
-                    conversation.facebook_messages_set.create(mID=message.get("message_id"),author_id = message.get("author_id") , body = message.get("body"), created_time = createdTime)
+                    text = message.get("body")
+                    if text:
+                        text = encrypt(key,text)
+                    conversation.facebook_messages_set.create(mID=message.get("message_id"),author_id = message.get("author_id") , body = text, created_time = createdTime)
                 print "step5"
         
         for streamData in stream_objects:
@@ -301,6 +302,7 @@ def facebook_post(request):
             if desc == None:
                 desc = ""
             mess = streamData.get("message")
+            mess = encrypt(key,mess)
             if mess == None:
                 mess = ""
             updated_time = datetime.datetime.fromtimestamp(streamData.get("updated_time")).strftime('%Y-%m-%d %H:%M:%S')
@@ -311,7 +313,8 @@ def facebook_post(request):
             if len(streamData.get("Comments")) != 0:
                 for comment in streamData.get("Comments"):
                     print comment
-                    activity.facebook_comments_set.create( from_id = comment.get("fromid"), text = comment.get("text"), comment_id = comment.get("id") )
+                    text = encrypt(key,comment.get("text"))
+                    activity.facebook_comments_set.create( from_id = comment.get("fromid"), text = text, comment_id = comment.get("id") )
                     print "step_4"
 
     except:
@@ -355,7 +358,8 @@ def twitter_post(request):
                 print "step5"
                 toIDStr=message.get("To")
                 datetime = parser.parse(message.get("CreateTime")).strftime('%Y-%m-%d %H:%M:%S')
-                m=twitter_message(mID=message.get("MID"),fromID=message.get("From"),created_time=datetime,body=message.get("Text"))
+                text = encrypy(key,message.get("Text"))
+                m=twitter_message(mID=message.get("MID"),fromID=message.get("From"),created_time=datetime,body=text)
                 if toIDStr:
                     m.toID=toIDStr
                 str1=message.get("InReplyToStatusID")
@@ -401,14 +405,16 @@ def twitter_post_separate(request):
                 print "step5"
                 if not twitter_message.objects.filter(mID=message.get("MID")):
                     datetime = parser.parse(message.get("CreateTime")).strftime('%Y-%m-%d %H:%M:%S')
-                    c.twitter_message_set.create(mID=message.get("MID"),fromID=message.get("From"),toID=message.get("To"),created_time=message.get("CreateTime"),body=message.get("Text")) 
+                    text = encrypt(key,str(message.get("Text")))
+                    c.twitter_message_set.create(mID=message.get("MID"),fromID=message.get("From"),toID=message.get("To"),created_time=message.get("CreateTime"),body=text) 
                 print "step6" 
         for status in statusData:
             print "step7"
             if twitter_status.objects.filter(mID=status.get("MID")):
                 continue
             datetime = parser.parse(status.get("CreateTime")).strftime('%Y-%m-%d %H:%M:%S')
-            s=twitter_status(mID=status.get("MID"),created_time=datetime,body=status.get("Text"))
+            text = encrypt(key,str(status.get("Text")))
+            s=twitter_status(mID=status.get("MID"),created_time=datetime,body=text)
             s.save()
             if User.objects.filter(twitter_id=status.get("From")):
                 print("Get here")

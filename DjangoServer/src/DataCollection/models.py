@@ -41,10 +41,8 @@ class sms_message(models.Model):
     source = models.CharField(max_length=100)
     recipient = models.CharField(max_length=100)
     #key= models.CharField(primary_key=True , max_length=50)
-    body = models.TextField()
+    body = models.BinaryField()
     created_time = models.DateTimeField()
-    def __unicode__(self): 
-        return self.body
     def from_last_day(self):
         return self.created_time >= timezone.now() - datetime.timedelta(days=1)
         
@@ -62,10 +60,8 @@ class facebook_messages(models.Model):
     mID=models.CharField(max_length=100,primary_key=True)
     conversation = models.ForeignKey(facebook_conversation)
     author_id = models.CharField(max_length=100)
-    body = models.CharField(max_length=100)
+    body = models.BinaryField()
     created_time = models.DateTimeField()
-    def __unicode__(self): 
-        return self.body
     def from_last_day(self):
         return self.created_time >= timezone.now() - datetime.timedelta(days=1)
 
@@ -75,21 +71,20 @@ class facebook_activity(models.Model):
     updated_time = models.DateTimeField()
     source_id = models.CharField(max_length=100)
     description = models.TextField()
-    message = models.TextField()
+    message = models.BinaryField()
     actor_id = models.CharField(max_length=100)
     isPrimaryPost = models.CharField(max_length=100)
     def __unicode__(self): 
-        return self.post_id + ", " + self.description + ", " + self.message
+        return self.post_id + ", " + self.description
     def from_last_day(self):
         return self.updated_time >= timezone.now() - datetime.timedelta(days=1)
         
 class facebook_comments(models.Model):
     activity = models.ForeignKey(facebook_activity)
     from_id = models.CharField(max_length=100)
-    text = models.TextField()
+    text = models.BinaryField()
     comment_id = models.CharField(max_length=100)
-    def __unicode__(self): 
-        return self.text
+    
     
                     
 class twitter_conversation(models.Model):
@@ -117,7 +112,7 @@ class twitter_message(models.Model):
     conversations=models.ForeignKey(twitter_direct_conversation)
     fromID = models.CharField(max_length=100)
     toID = models.CharField(max_length=100)
-    body = models.CharField(max_length=100)
+    body = models.CharField(max_length=500)
     created_time = models.DateTimeField()
     inReplyToStatusID = models.CharField(max_length=100)
     def from_last_day(self):
