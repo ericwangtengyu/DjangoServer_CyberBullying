@@ -358,7 +358,7 @@ def twitter_post(request):
                 print "step5"
                 toIDStr=message.get("To")
                 datetime = parser.parse(message.get("CreateTime")).strftime('%Y-%m-%d %H:%M:%S')
-                text = encrypy(key,message.get("Text"))
+                text = encrypt(key,message.get("Text"))
                 m=twitter_message(mID=message.get("MID"),fromID=message.get("From"),created_time=datetime,body=text)
                 if toIDStr:
                     m.toID=toIDStr
@@ -459,20 +459,32 @@ def unify_collect(request):
         '''
         tDirectConvers = user.twitter_direct_conversation_set.filter(endTime__gte=startDate, endTime__lte=endDate)
         tMessage = twitter_message.objects.filter(conversations__in=tDirectConvers)
+        for tM in tMessage:
+            tM.body=decrypt(key,tM.body);
         print "Step2"
         tStatus = twitter_status.objects.filter(created_time__gte=startDate, created_time__lte=endDate).filter(Q(mentionor__phone_number__exact=user.phone_number)|Q(author=user))
+        for tS in tStatus:
+            tS.body=decrypt(key,tS.body)
         print "Step2.1"
         '''
         Facebook part
         '''
         fDirectConvers = user.facebook_conversation_set.filter(updated_time__gte=startDate, updated_time__lte=endDate)
         fMessages = facebook_messages.objects.filter(conversation__in=fDirectConvers)
+        for fM in fMessages:
+            fM.body=decrypt(key,fM.body)
         fActivity = user.facebook_activity_set.filter(updated_time__gte=startDate, updated_time__lte=endDate)
+        for fA in fActivity:
+            fA.message=decrypt(key,fA.message)
         fComments = facebook_comments.objects.filter(activity__in=fActivity)
+        for fC in fComments:
+            fC.text=decrypt(key,fC.text)
         print "Step3"
     
         SMSConversation = user.sms_conversation_set.filter(last_updated__gte=startDate, last_updated__lte=endDate)
         SMSMessage= sms_message.objects.filter(conversation__in=SMSConversation)
+        for SM in SMSMessage:
+            SM.body=decrypt(key,SM.body)
         print "Step4"
         t1= simplejson.loads(serializers.serialize("json", tDirectConvers))
         t2= simplejson.loads(serializers.serialize("json", tMessage))
