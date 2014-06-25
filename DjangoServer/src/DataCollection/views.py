@@ -459,12 +459,8 @@ def unify_collect(request):
         '''
         tDirectConvers = user.twitter_direct_conversation_set.filter(endTime__gte=startDate, endTime__lte=endDate)
         tMessage = twitter_message.objects.filter(conversations__in=tDirectConvers)
-        for tM in tMessage:
-            tM.body=decrypt(key,tM.body);
         print "Step2"
         tStatus = twitter_status.objects.filter(created_time__gte=startDate, created_time__lte=endDate).filter(Q(mentionor__phone_number__exact=user.phone_number)|Q(author=user))
-        for tS in tStatus:
-            tS.body=decrypt(key,tS.body)
         print "Step2.1"
         '''
         Facebook part
