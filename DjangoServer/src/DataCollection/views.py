@@ -519,12 +519,12 @@ def unify_collect(request):
 			f4[i]['fields']['text']=fCList[i]
 		for i in range(len(f2)):
 			f2[i]['fields']['body']=fMList[i]
-        for i in range(len(f3)):
-            f3[i]['fields'['body']=fAList[i]
-        print "Step5"
-        jsonData=simplejson.dumps( {'twitterDirectConversation':t1, 'twitterMessage':t2,'twitterStatus':t3,'facebookDirectConversation':f1,'facebookMessage':f2,'facebookActivity':f3,'facebookComments':f4,'SMSConversation':s1,'SMSMessage':s2} )
-    except:
-        import sys
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        print exc_type, exc_tb, exc_obj
-    return StreamingHttpResponse(jsonData, content_type="application/json")
+		for i in range(len(f3)):
+			f3[i]['fields']['body']=fAList[i]
+		print "Step5"
+		jsonData=simplejson.dumps( {'twitterDirectConversation':t1, 'twitterMessage':t2,'twitterStatus':t3,'facebookDirectConversation':f1,'facebookMessage':f2,'facebookActivity':f3,'facebookComments':f4,'SMSConversation':s1,'SMSMessage':s2} )
+	except:
+		import sys
+		exc_type, exc_obj, exc_tb = sys.exc_info()
+		print exc_type, exc_tb, exc_obj
+	return StreamingHttpResponse(jsonData, content_type="application/json")
