@@ -461,57 +461,66 @@ def twitter_post_separate(request):
 
 @csrf_exempt     
 def unify_collect(request):
-    result = json.loads(request.body)
-    phoneNum = result.get("phoneNum")
-    print phoneNum
-    startDate = result.get("startDate")
-    endDate = result.get("endDate")
-    startDateTime = datetime.datetime.fromtimestamp(float(startDate)/1000.0).strftime('%Y-%m-%d %H:%M:%S')
-    print startDateTime
-    endDateTime = datetime.datetime.fromtimestamp(float(endDate)/1000.0).strftime('%Y-%m-%d %H:%M:%S')
-    print endDateTime
-    user = User.objects.get(pk=phoneNum)
-    try:
-        print "Step1"
-        '''
-        Twitter part
-        '''
-        tDirectConvers = user.twitter_direct_conversation_set.filter(endTime__gte=startDate, endTime__lte=endDate)
-        tMessage = twitter_message.objects.filter(conversations__in=tDirectConvers)
-        print "Step2"
-        tStatus = twitter_status.objects.filter(created_time__gte=startDateTime, created_time__lte=endDateTime).filter(Q(mentionor__phone_number__exact=user.phone_number)|Q(author=user))
-        print "Step2.1"
-        '''
-        Facebook part
-        '''
-        fDirectConvers = user.facebook_conversation_set.filter(updated_time__gte=startDateTime, updated_time__lte=endDateTime)
-        fMessages = facebook_messages.objects.filter(conversation__in=fDirectConvers)
-        for fM in fMessages:
-            fM.body=decrypt(key,fM.body)
-        fActivity = user.facebook_activity_set.filter(updated_time__gte=startDate, updated_time__lte=endDate)
-        for fA in fActivity:
-            fA.message=decrypt(key,fA.message)
-        fComments = facebook_comments.objects.filter(activity__in=fActivity)
-        for fC in fComments:
-            fC.text=decrypt(key,fC.text)
-        print "Step3"
+	result = json.loads(request.body)
+	phoneNum = result.get("phoneNum")
+	print phoneNum
+	startDate = result.get("startDate")
+	endDate = result.get("endDate")
+	startDateTime = datetime.datetime.fromtimestamp(float(startDate)/1000.0).strftime('%Y-%m-%d %H:%M:%S')
+	print startDateTime
+	endDateTime = datetime.datetime.fromtimestamp(float(endDate)/1000.0).strftime('%Y-%m-%d %H:%M:%S')
+	print endDateTime
+	user = User.objects.get(pk=phoneNum)
+	try:
+		print "Step1"
+		tDirectConvers = user.twitter_direct_conversation_set.filter(endTime__gte=startDate, endTime__lte=endDate)
+		tMessage = twitter_message.objects.filter(conversations__in=tDirectConvers)
+		print "Step2"
+		tStatus = twitter_status.objects.filter(created_time__gte=startDateTime, created_time__lte=endDateTime).filter(Q(mentionor__phone_number__exact=user.phone_number)|Q(author=user))
+		print "Step2.1"
+		fDirectConvers = user.facebook_conversation_set.filter(updated_time__gte=startDate, updated_time__lte=endDate)
+		fMessages = facebook_messages.objects.filter(conversation__in=fDirectConvers)
+		fMList=[]
+		for fM in fMessages:
+			fMList.append(str(decrypt(key,fM.body)))
+        
+		fActivity = user.facebook_activity_set.filter(updated_time__gte=startDateTime, updated_time__lte=endDateTime)
+		fAList=[]
+		for fA in fActivity:
+			fAList.append(str(decrypt(key,fA.message)))
+            
+		fComments = facebook_comments.objects.filter(activity__in=fActivity)
+		fCList=[]
+		for fC in fComments:
+			fCStr=str(decrypt(key,fC.text))
+			fCList.append(fCStr)
+		print "Step3"
     
-        SMSConversation = user.sms_conversation_set.filter(last_updated__gte=startDate, last_updated__lte=endDate)
-        print SMSConversation
-        SMSMessage= sms_message.objects.filter(conversation__in=SMSConversation)
-        for SM in SMSMessage:
-            SM.SmSbody=decrypt(key,SM.SmSbody)
-            print SM.SmSbody
-        print "Step4"
-        t1= simplejson.loads(serializers.serialize("json", tDirectConvers))
-        t2= simplejson.loads(serializers.serialize("json", tMessage))
-        t3= simplejson.loads(serializers.serialize("json", tStatus))
-        f1= simplejson.loads(serializers.serialize("json", fDirectConvers))
-        f2= simplejson.loads(serializers.serialize("json", fMessages))
-        f3= simplejson.loads(serializers.serialize("json", fActivity))
-        f4= simplejson.loads(serializers.serialize("json", fComments))
-        s1= simplejson.loads(serializers.serialize("json", SMSConversation))
-        s2= simplejson.loads(serializers.serialize("json", SMSMessage))
+		SMSConversation = user.sms_conversation_set.filter(last_updated__gte=startDate, last_updated__lte=endDate)
+		print SMSConversation
+		SMSMessage= sms_message.objects.filter(conversation__in=SMSConversation)
+		smList=[]
+		for SM in SMSMessage:
+			smsStr=str(decrypt(key,SM.SmSbody))
+			smList.append(smsStr)
+		print "Step4"
+		t1= simplejson.loads(serializers.serialize("json", tDirectConvers))
+		t2= simplejson.loads(serializers.serialize("json", tMessage))
+		t3= simplejson.loads(serializers.serialize("json", tStatus))
+		f1= simplejson.loads(serializers.serialize("json", fDirectConvers))
+		f2= simplejson.loads(serializers.serialize("json", fMessages))
+		f3= simplejson.loads(serializers.serialize("json", fActivity))
+		f4= simplejson.loads(serializers.serialize("json", fComments))
+		s1= simplejson.loads(serializers.serialize("json", SMSConversation))
+		s2= simplejson.loads(serializers.serialize("json", SMSMessage))
+		for i in range(len(s2)):
+			s2[i]['fields']['SmSbody']=smList[i]
+		for i in range(len(f4)):
+			f4[i]['fields']['text']=fCList[i]
+		for i in range(len(f2)):
+			f2[i]['fields']['body']=fMList[i]
+        for i in range(len(f3)):
+            f3[i]['fields'['body']=fAList[i]
         print "Step5"
         jsonData=simplejson.dumps( {'twitterDirectConversation':t1, 'twitterMessage':t2,'twitterStatus':t3,'facebookDirectConversation':f1,'facebookMessage':f2,'facebookActivity':f3,'facebookComments':f4,'SMSConversation':s1,'SMSMessage':s2} )
     except:
