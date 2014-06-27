@@ -486,14 +486,14 @@ def unify_collect(request):
         '''
         fDirectConvers = user.facebook_conversation_set.filter(updated_time__gte=startDateTime, updated_time__lte=endDateTime)
         fMessages = facebook_messages.objects.filter(conversation__in=fDirectConvers)
-        #for fM in fMessages:
-        #    fM.body=decrypt(key,fM.body)
-        fActivity = user.facebook_activity_set.filter(updated_time__gte=startDateTime, updated_time__lte=endDateTime)
-        #for fA in fActivity:
-        #    fA.message=decrypt(key,fA.message)
+        for fM in fMessages:
+            fM.body=decrypt(key,fM.body)
+        fActivity = user.facebook_activity_set.filter(updated_time__gte=startDate, updated_time__lte=endDate)
+        for fA in fActivity:
+            fA.message=decrypt(key,fA.message)
         fComments = facebook_comments.objects.filter(activity__in=fActivity)
-        #for fC in fComments:
-        #    fC.text=decrypt(key,fC.text)
+        for fC in fComments:
+            fC.text=decrypt(key,fC.text)
         print "Step3"
     
         SMSConversation = user.sms_conversation_set.filter(last_updated__gte=startDate, last_updated__lte=endDate)
