@@ -17,4 +17,5 @@ urlpatterns = patterns('',
     url(r'^makeuser/$' , views.make_user , name= 'makeuser' ),
     url(r'^unifycollect/$' , views.unify_collect, name= 'unifycollect' ),
     url(r'^getalluser/$' , views.get_all_user, name= 'getalluser' ),
+    url(r'^app/$', views.app , name='app'),
 )

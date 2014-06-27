@@ -69,8 +69,6 @@ DATABASES = {
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
-
 USE_I18N = True
 
 USE_L10N = True
@@ -79,7 +77,7 @@ USE_TZ = True
 
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_HOST_USER = 'mclapp08@gmail.com'
-EMAIL_HOST_PASSWORD = 'maxc1234'
+EMAIL_HOST_PASSWORD = 'openMaxc1234'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
@@ -88,3 +86,48 @@ EMAIL_USE_TLS = True
 # https://docs.djangoproject.com/en/1.6/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# set up logger 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format' : "[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] %(message)s",
+            'datefmt' : "%d/%b/%Y %H:%M:%S"
+        },
+        'simple': {
+            'format': '%(levelname)s %(message)s',
+            'datefmt' : "%d/%b/%Y %H:%M:%S"
+        },
+    },
+    'handlers': {
+        'app': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': 'CyberServer.log',
+            'formatter': 'verbose'
+        },
+         'jango': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': 'CyberServer.log',
+            'formatter': 'simple'
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers':['jango'],
+            'propagate': True,
+            'level':'DEBUG',
+        },
+        'DataCollection': {
+            'handlers': ['app'],
+            'level': 'DEBUG',
+        },
+		'survey': {
+			'handlers': ['app'],
+            'level': 'DEBUG',
+        },
+    }
+}
