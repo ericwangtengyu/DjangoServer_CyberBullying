@@ -9,14 +9,15 @@ from django.http import HttpResponseRedirect,HttpResponse
 from django.shortcuts import get_object_or_404,render
 from django.core import serializers
 from .models import Survey, Question,Choice
-from DataCollection.models import User, SurveyData
+from DataCollection.models import User, SurveyData, UpdatedDate
 from django.core.mail import send_mail
 import json
 
 def survey(request , survey_id , user_id):
-    survey = get_object_or_404(Survey, pk = survey_id )
-    return render(request , 'survey/survey.html',{'survey':survey,
-													'user_id':user_id})
+	user = get_object_or_404(User, pk = user_id )
+	date = get_object_or_404(UpdatedDate, user = user )
+	survey = get_object_or_404(Survey, pk = survey_id )
+	return render(request , 'survey/survey.html',{'survey':survey,'user_id':user_id, 'date':date})
     
 def sendemail(request,survey_id,user_id):
     text = request.POST["textbox"]

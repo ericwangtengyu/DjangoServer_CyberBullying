@@ -6,7 +6,9 @@
 </head>
 
 <h1>{{survey.title}}</h1>
-
+<pre>"Facebook last updated {{ date.facebookDate }}"</pre>
+<pre>"Text messages last updated {{ date.smsDate }}"</pre>
+<pre>"Twitter last updated {{ date.twitterDate }}"</pre>
 {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
 
 <form action="{% url 'survey:answer' survey.id user_id %}" method="post">

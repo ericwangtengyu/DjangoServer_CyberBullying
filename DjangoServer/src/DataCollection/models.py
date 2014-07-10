@@ -4,7 +4,6 @@ import datetime
 
 class User(models.Model):
     phone_number = models.CharField(max_length=12, primary_key=True)
-    survey = models.TextField(default = "http://www.google.com")
     facebook_token = models.TextField(default = "")
     facebook_appid = models.CharField(max_length=100,default = "")
     twitter_token = models.CharField(max_length=100,default = "")
@@ -14,6 +13,13 @@ class User(models.Model):
     def __unicode__(self): 
         return str(self.phone_number)
 
+class UpdatedDate(models.Model):
+	user = models.ForeignKey(User)
+	facebookDate = models.DateTimeField(blank=True, null=True)
+	twitterDate = models.DateTimeField(blank=True, null=True)
+	smsDate = models.DateTimeField(blank=True, null=True)
+	
+	
 class SurveyData(models.Model):
 	user = models.ForeignKey(User)
 	surveydata = models.TextField(default =  "{}")

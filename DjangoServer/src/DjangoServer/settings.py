@@ -105,13 +105,13 @@ LOGGING = {
         'app': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': 'CyberServer.log',
+            'filename': '/home/clapp/Documents/CyberServer.log',
             'formatter': 'verbose'
         },
          'jango': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': 'CyberServer.log',
+            'filename': '/home/clapp/Documents/CyberServer.log',
             'formatter': 'simple'
         },
     },

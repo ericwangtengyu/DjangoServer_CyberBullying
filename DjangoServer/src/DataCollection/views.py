@@ -1,7 +1,7 @@
 from DataCollection.models import User, twitter_direct_conversation, \
     twitter_conversation, twitter_message, sms_conversation, userInfo, \
     twitter_status, facebook_conversation, facebook_messages, facebook_comments, \
-    sms_message,SurveyData
+    sms_message,SurveyData,UpdatedDate,facebook_activity
 from survey.models import Survey,Question,Choice
 from django.shortcuts import render
 from django.core import serializers
@@ -9,7 +9,7 @@ from django.db.models import Q
 from django.http import HttpResponse
 from django.http.response import StreamingHttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.utils import simplejson, encoding
+from django.utils import simplejson, encoding, timezone
 from django.core.mail import send_mail
 
 import json
@@ -149,13 +149,23 @@ def survey(request):
 			#return HttpResponse(theIP)
 		#else:
 			#return HttpResponse("null")
-                                
+def upDateSMS(user):
+	if UpdatedDate.objects.filter(user = user):
+		D = UpdatedDate.objects.get(user = user)
+		smsD = D.smsDate
+		smsD = timezone.now()
+		D.save()		                                
+	else:
+		newDate = UpdatedDate(user = user, smsDate = timezone.now())
+		newDate.save()
+		
+
 @csrf_exempt    
 def postandroid(request):
 	try:
 		data=json.loads(request.body)
-		print(str(data))
-		user = User.objects.get( phone_number = data.get("user"))
+		user = User.objects.get(phone_number = data.get("user"))
+		upDateSMS(user)
 		conversations = data.get("conversation")
 		for conver in conversations:
 			try:
@@ -247,14 +257,14 @@ def make_user(request):
 	data = json.loads(request.body)
 	print data
 	try:
-		u = User( phone_number = data.get("phone_number") , facebook_token = data.get("facebook_token") , facebook_appid = data.get("facebook_appid") , twitter_token = data.get("twitter_token") , twitter_secret = data.get("twitter_secret") , twitter_screen_name = data.get("twitter_screen_name"), twitter_id = data.get("twitter_id"))   
+		u = User( phone_number = data.get("phone_number") , facebook_token = data.get("facebook_token") , facebook_appid = data.get("facebook_appid") , twitter_token = data.get("twitter_token") , twitter_secret = data.get("twitter_secret") , twitter_screen_name = data.get("twitter_screen_name"), twitter_id = hash(str(data.get("twitter_id"))))   
 		u.save()
 		user_info=userInfo(user=u,userTimeLineSinceID=1,mentionTimeLineSinceID=1,directMsgSinceID=1,sentDirectMsgSinceID=1)  
 		user_info.save()
 		make_or_remake(data.get("phone_number"))
 	except:
 		try:
-			u = User( phone_number = data.get("phone_number") , twitter_token = data.get("twitter_token") , twitter_secret = data.get("twitter_secret") , twitter_screen_name = data.get("twitter_screen_name"), twitter_id = data.get("twitter_id"))   
+			u = User( phone_number = data.get("phone_number") , twitter_token = data.get("twitter_token") , twitter_secret = data.get("twitter_secret") , twitter_screen_name = data.get("twitter_screen_name"), twitter_id = hash(str(data.get("twitter_id"))))   
 			u.save()
 			user_info=userInfo(user=u,userTimeLineSinceID=1,mentionTimeLineSinceID=1,directMsgSinceID=1,sentDirectMsgSinceID=1)  
 			user_info.save()
@@ -275,73 +285,94 @@ def make_user(request):
 	
 	return HttpResponse('PASS')
 
-
+def upDateFacebook(user):
+	print("Got to upDate Facebook")
+	if UpdatedDate.objects.filter(user = user):
+		D = UpdatedDate.objects.get(user = user)
+		D.facebookDate = timezone.now()
+		D.save()		                                
+	else:
+		newDate = UpdatedDate(user = user, facebookDate = timezone.now())
+		newDate.save()
 
 @csrf_exempt     
 def facebook_post(request):
-    try:
-        data = json.loads(request.body)
-        user = User.objects.get(pk = data.get("user"))
-        print data.keys()
-        conversations = data.get("conversation_data")
-        stream_objects = data.get("stream_data")
+	try:
+		data = json.loads(request.body)
+		user = User.objects.get(pk = data.get("user"))
+		upDateFacebook(user)
+		conversations = data.get("conversation_data")
+		stream_objects = data.get("stream_data")
+		for conversationData in conversations:
+			print "step2"
+			try:
+				print " I tryed"
+				conversation=facebook_conversation.objects.get(pk=conversationData.get("thread_id"));
+				if not conversation.user.objects.filter(pk=data.get("user")):
+					conversation.user.add(user)
+			except:
+				recList = eval(str(conversationData.get("recipients")))
+				recipientList = []
+				for rec in recList:
+					recipientList.append(hash(str(rec)))
+				conversation=facebook_conversation( message_count= conversationData.get("message_count") , thread_id = conversationData.get("thread_id") ,updated_time = conversationData.get("updated_time") , recipients = str(recipientList))
+				conversation.save()
+				conversation.user.add(user)
 
-        for conversationData in conversations:
-            print "step2"
-            try:
-                print " I tryed"
-                conversation=facebook_conversation.objects.get(pk=conversationData.get("thread_id"));
-                if not conversation.user.objects.filter(pk=data.get("user")):
-                    conversation.user.add(user)
-            except:
-                conversation=facebook_conversation( message_count= conversationData.get("message_count") , thread_id = conversationData.get("thread_id") ,updated_time = conversationData.get("updated_time") , recipients = conversationData.get("recipients"))
-                conversation.save()
-                conversation.user.add(user)
-
-                print "create"
-                conversation = user.facebook_conversation_set.get( pk = conversationData.get("thread_id"))
-                print "step3"
-            print conversationData.keys()
-            for message in conversationData.get("messages"):
-                print "step4"
-                print message.keys()
-                print message
-                if not facebook_messages.objects.filter(pk=message.get("message_id")):
-                    print "Msg not exist"
-                    print conversation.facebook_messages_set.all()
-                    createdTime = datetime.datetime.fromtimestamp(message.get("created_time")).strftime('%Y-%m-%d %H:%M:%S')
-                    text = encrypt(key,message.get("body"))
-                    conversation.facebook_messages_set.create(mID=message.get("message_id"),author_id = message.get("author_id") , body = text, created_time = createdTime)
-                print "step5"
+				print "create"
+				conversation = user.facebook_conversation_set.get( pk = conversationData.get("thread_id"))
+				print "step3"
+			print conversationData.keys()
+			for message in conversationData.get("messages"):
+				print "step4"
+				print message.keys()
+				print message
+				if not facebook_messages.objects.filter(pk=message.get("message_id")):
+					print "Msg not exist"
+					print conversation.facebook_messages_set.all()
+					createdTime = datetime.datetime.fromtimestamp(message.get("created_time")).strftime('%Y-%m-%d %H:%M:%S')
+					text = encrypt(key,message.get("body"))
+					conversation.facebook_messages_set.create(mID=message.get("message_id"),author_id = hash(str(message.get("author_id"))) , body = text, created_time = createdTime)
+				print "step5"
         
-        for streamData in stream_objects:
-            print "step_2"
-            desc = streamData.get("description")
-            if desc == None:
-                desc = ""
-            mess = streamData.get("message")
-            mess = encrypt(key,mess)
-            if mess == None:
-                mess = ""
-            updated_time = datetime.datetime.fromtimestamp(streamData.get("updated_time")).strftime('%Y-%m-%d %H:%M:%S')
-            user.facebook_activity_set.create( post_id = streamData.get("post_id"), updated_time = updated_time, source_id = streamData.get("source_id"), description = desc, message = mess, actor_id = streamData.get("actor_id"), isPrimaryPost = str(len(streamData.get("Comments")) != 0))
-            print "step_2.5"
-            activity = user.facebook_activity_set.get( post_id = streamData.get("post_id") )
-            print "step_3"
-            if len(streamData.get("Comments")) != 0:
-                for comment in streamData.get("Comments"):
-                    print comment
-                    text = encrypt(key,comment.get("text"))
-                    activity.facebook_comments_set.create( from_id = comment.get("fromid"), text = text, comment_id = comment.get("id") )
-                    print "step_4"
+		for streamData in stream_objects:
+			print "step_2"
+			desc = streamData.get("description")
+			if desc == None:
+				desc = ""
+			mess = streamData.get("message")
+			mess = encrypt(key,mess)
+			if mess == None:
+				mess = ""
+			updated_time = datetime.datetime.fromtimestamp(streamData.get("updated_time")).strftime('%Y-%m-%d %H:%M:%S')
+			if not facebook_activity.objects.filter(post_id = streamData.get("post_id")):
+				user.facebook_activity_set.create( post_id = streamData.get("post_id"), updated_time = updated_time, source_id = hash(str(streamData.get("source_id"))), description = desc, message = mess, actor_id = hash(str(streamData.get("actor_id"))), isPrimaryPost = str(len(streamData.get("Comments")) != 0))
+			print "step_2.5"
+			activity = user.facebook_activity_set.get( post_id = streamData.get("post_id") )
+			print "step_3"
+			if len(streamData.get("Comments")) != 0:
+				for comment in streamData.get("Comments"):
+					print comment
+					text = encrypt(key,comment.get("text"))
+					activity.facebook_comments_set.create( from_id = hash(str(comment.get("fromid"))), text = text, comment_id = comment.get("id") )
+					print "step_4"
 
-    except:
-        import sys
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        print exc_type, exc_tb, exc_obj
-        print 'Exception: Could not parse JSON'
-    return HttpResponse('done')
+	except:
+		import sys
+		exc_type, exc_obj, exc_tb = sys.exc_info()
+		print exc_type, exc_tb, exc_obj
+		print 'Exception: Could not parse JSON'
+	return HttpResponse('done')
     
+def upDateTwitter(user):
+	if UpdatedDate.objects.filter(user = user):
+		D = UpdatedDate.objects.get(user = user)
+		D.twitterDate = timezone.now()
+		D.save()		                                
+	else:
+		newDate = UpdatedDate(user = user, twitterDate = timezone.now())
+		newDate.save()
+#tengyu is no longer use twitter_post however he suggest I leave the code in 
 @csrf_exempt     
 def twitter_post(request):
     try:
@@ -398,9 +429,11 @@ def twitter_post_separate(request):
         result = json.loads(request.body)
         print "step0"
         userTwitterID=result.get("user")
+        print userTwitterID
         conversationData=result.get("conversationData")
         statusData=result.get("statusData")
         p=User.objects.get(twitter_id=userTwitterID)
+        upDateTwitter(p)
         userInfo.objects.filter(user=p).update(userTimeLineSinceID=result.get("userTimeLineSinceID"),mentionTimeLineSinceID=result.get("mentionTimeLineSinceID"),directMsgSinceID=result.get("directMsgSinceID"),sentDirectMsgSinceID=result.get("sentDirectMsgSinceID"))
         print "step1"
         for conversation in conversationData: 
@@ -422,7 +455,7 @@ def twitter_post_separate(request):
                 print "step5"
                 if not twitter_message.objects.filter(mID=message.get("MID")):
                     date = parser.parse(message.get("CreateTime")).strftime('%Y-%m-%d %H:%M:%S')
-                    c.twitter_message_set.create(mID=message.get("MID"),fromID=message.get("From"),toID=message.get("To"),created_time=date,body=message.get("Text")) 
+                    c.twitter_message_set.create(mID=message.get("MID"),fromID=hash(str(message.get("From"))),toID=hash(str(message.get("To"))),created_time=date,body=message.get("Text")) 
                 print "step6" 
         for status in statusData:
             print "step7"
@@ -431,9 +464,9 @@ def twitter_post_separate(request):
             date = parser.parse(status.get("CreateTime")).strftime('%Y-%m-%d %H:%M:%S')
             s=twitter_status(mID=status.get("MID"),created_time=date,body=status.get("Text"))
             s.save()
-            if User.objects.filter(twitter_id=status.get("From")):
+            if User.objects.filter(twitter_id=hash(str(status.get("From")))):
                 print("Get here")
-                s.author=User.objects.get(twitter_id=status.get("From"))
+                s.author=User.objects.get(twitter_id=hash(str(status.get("From"))))
                 print s.author
                 s.save()
             toIDStr=status.get("To")   
@@ -442,8 +475,8 @@ def twitter_post_separate(request):
                 print toIDStr
                 strList=toIDStr.split(",")
                 for userID in strList:
-                    if User.objects.filter(twitter_id=userID):
-                        u=User.objects.get(twitter_id=userID)
+                    if User.objects.filter(twitter_id=hash(str(userID))):
+                        u=User.objects.get(twitter_id=hash(str(userID)))
                         s.mentionor.add(u)
             inReplyToIDStr=status.get("InReplyToStatusID")
             if inReplyToIDStr:

@@ -1,7 +1,7 @@
 from DataCollection.models import User, sms_message, facebook_conversation, \
     facebook_messages, twitter_conversation, twitter_message, facebook_comments, \
     facebook_activity, sms_conversation, userInfo, twitter_direct_conversation, \
-    twitter_status,SurveyData
+    twitter_status,SurveyData, UpdatedDate
 from django.contrib import admin
 
 admin.site.register(User)
@@ -27,4 +27,5 @@ admin.site.register(facebook_comments)
 admin.site.register(facebook_activity)
 admin.site.register(userInfo) 
 admin.site.register(SurveyData)
+admin.site.register(UpdatedDate) 
 # Register your models here.
