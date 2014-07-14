@@ -18,4 +18,5 @@ urlpatterns = patterns('',
     url(r'^unifycollect/$' , views.unify_collect, name= 'unifycollect' ),
     url(r'^getalluser/$' , views.get_all_user, name= 'getalluser' ),
     url(r'^app/$', views.app , name='app'),
+    url(r'^test/$' , views.testyMctesterson),
 )

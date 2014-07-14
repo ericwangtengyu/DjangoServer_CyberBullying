@@ -3,11 +3,11 @@ from django.utils import timezone
 import datetime
 
 class User(models.Model):
-    phone_number = models.CharField(max_length=12, primary_key=True)
+    phone_number = models.CharField(max_length=100,primary_key=True)
     facebook_token = models.TextField(default = "")
     facebook_appid = models.CharField(max_length=100,default = "")
     twitter_token = models.CharField(max_length=100,default = "")
-    twitter_id = models.CharField(max_length=100,default = "")
+    twitter_id = models.CharField(max_length=200,default = "")
     twitter_secret = models.CharField(max_length=100,default = "")
     twitter_screen_name = models.CharField(max_length=100,default = "")
     def __unicode__(self): 
@@ -94,7 +94,7 @@ class facebook_comments(models.Model):
     
                     
 class twitter_conversation(models.Model):
-    cID = models.CharField(max_length=100,primary_key=True)
+    cID = models.CharField(max_length=200,primary_key=True)
     users=models.ManyToManyField(User)
     message_count = models.IntegerField()
     startTime = models.CharField(max_length=50)
@@ -104,7 +104,7 @@ class twitter_conversation(models.Model):
     type = models.IntegerField();
 
 class twitter_direct_conversation(models.Model):
-    cID=models.CharField(max_length=100,primary_key=True)
+    cID=models.CharField(max_length=200,primary_key=True)
     users=models.ManyToManyField(User)
     message_count = models.IntegerField()
     startTime = models.CharField(max_length=50)
@@ -114,10 +114,10 @@ class twitter_direct_conversation(models.Model):
     type = models.IntegerField();
 
 class twitter_message(models.Model):
-    mID = models.CharField(max_length=100,primary_key=True)
+    mID = models.CharField(max_length=200,primary_key=True)
     conversations=models.ForeignKey(twitter_direct_conversation)
-    fromID = models.CharField(max_length=100)
-    toID = models.CharField(max_length=100)
+    fromID = models.CharField(max_length=100,)
+    toID = models.CharField(max_length=100,)
     body = models.CharField(max_length=500)
     created_time = models.DateTimeField()
     inReplyToStatusID = models.CharField(max_length=100)
