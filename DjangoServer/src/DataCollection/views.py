@@ -6,14 +6,18 @@ from survey.models import Survey,Question,Choice
 from django.shortcuts import render
 from django.core import serializers
 from django.db.models import Q
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.http.response import StreamingHttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import simplejson, encoding, timezone
 from django.core.mail import send_mail
+from DjangoServer import settings
 
 import json
 import datetime
+import requests
+from twython import Twython
+
 
 from simplecrypt import encrypt,decrypt
 from dateutil import parser
@@ -22,14 +26,43 @@ from dateutil import parser
 
 ip = 'http://128.255.45.52:7777/'
 key = 'This_is%a#made^up*K3y'
+facebookAppId = '442864129167674'
+facebookSecret = 'f2140fbb0148c5db21db0d07b92e6ade'
+APP_KEY = settings.TWITTER_CONSUMER_KEY
+APP_SECRET = settings.TWITTER_CONSUMER_SECRET
+OAUTH_TOKEN = ''
+OAUTH_TOKEN_SECRET = ''
 
 @csrf_exempt
-def testyMctesterson(request):
-	return HttpResponse("Ninjas are silly!")
+def browserLogin(request):
+	return render(request, 'DataCollection/facebookTest.html')
 
+@csrf_exempt
+def instructions(request):
+	return render(request, 'DataCollection/screenshot.html')
+@csrf_exempt
+def browserLoginBackend(request):
+	try:
+		token = str(request.POST["token"])
+		email = str(request.POST["email"])
+		accessTokenRequestString = 'https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id='+ facebookAppId + '&client_secret='+ facebookSecret + '&fb_exchange_token=' + token 
+		facebookResponse= requests.get(accessTokenRequestString)
+		facebookResponse = facebookResponse.text
+		L = facebookResponse.split("&")
+		accessToken = L[0].replace("access_token=","")
+		u = User( phone_number = hash(str(email)) , facebook_token = accessToken , facebook_appid = facebookAppId)   
+		u.save()
+		make_or_remake(hash(str(email)))
+		return HttpResponse("thank you for registering")
+	except:
+		import sys
+		exc_type, exc_obj,exc_tb = sys.exc_info()
+		print exc_type, exc_obj,exc_tb
+		print 'Exception: Could not parse JSON'
+		return HttpResponse('Fail')
 @csrf_exempt
 def notUser(request):
-    return HttpResponse("phone number did not match any users" )
+    return HttpResponse("Number given is not a user.")
   
 @csrf_exempt
 def app(request):
@@ -40,8 +73,28 @@ def getHelp(request):
     return HttpResponse("we're here to help")
 
 @csrf_exempt
-def reportBulling(request):
-    return HttpResponse("report a bully ")
+def twitterLogin(request):
+	twitter = Twython(APP_KEY, APP_SECRET)
+	auth = twitter.get_authentication_tokens(callback_url='http://128.255.45.52:7777/DataCollection/twittercallback/')
+	global OAUTH_TOKEN
+	global OAUTH_TOKEN_SECRET
+	OAUTH_TOKEN = auth['oauth_token']
+	OAUTH_TOKEN_SECRET = auth['oauth_token_secret']
+	return HttpResponseRedirect(auth['auth_url'])
+
+@csrf_exempt
+def twitterCallBack(request):
+	oauth_verifier = request.GET['oauth_verifier']
+	twitter = Twython(APP_KEY, APP_SECRET,OAUTH_TOKEN, OAUTH_TOKEN_SECRET)
+	final_step = twitter.get_authorized_tokens(oauth_verifier)
+	token = final_step['oauth_token']
+	secret = final_step['oauth_token_secret']
+	twitter = Twython(APP_KEY, APP_SECRET,token, secret)
+	data= twitter.verify_credentials()
+	return HttpResponse( "" + str(data["screen_name"]) + str(data["id"]))
+	
+
+
 @csrf_exempt
 def newToken(request):
     try:
@@ -93,7 +146,8 @@ def survey(request):
         faceactlist = []
         for faceact in user.facebook_activity_set.all():
             if faceact.from_last_day():
-                faceactlist.append("  " + faceact.description)
+				if decrypt(key,faceact.message):
+					faceactlist.append("  activity:" + decrypt(key,faceact.message))
         twitterStatus = []
         qs = list(twitter_status.objects.filter(author = user))
         for twitterstatus in qs:
@@ -168,10 +222,12 @@ def upDateSMS(user):
 def postandroid(request):
 	try:
 		data=json.loads(request.body)
+		print request.body
 		user = User.objects.get(phone_number = hash(str(data.get("user"))))
 		upDateSMS(user)
 		conversations = data.get("conversation")
 		for conver in conversations:
+			print str(conver.get("participant"))
 			participantsNOHash = eval(str(conver.get("participant")))
 			participantsHash = []
 			for part in participantsNOHash:
@@ -253,7 +309,6 @@ def make_or_remake(phone_number):
 @csrf_exempt    
 def make_user(request):
 	data = json.loads(request.body)
-	print data
 	try:
 		u = User( phone_number = hash(str(data.get("phone_number"))) , facebook_token = data.get("facebook_token") , facebook_appid = data.get("facebook_appid") , twitter_token = data.get("twitter_token") , twitter_secret = data.get("twitter_secret") , twitter_screen_name = data.get("twitter_screen_name"), twitter_id = hash(str(data.get("twitter_id"))))   
 		u.save()

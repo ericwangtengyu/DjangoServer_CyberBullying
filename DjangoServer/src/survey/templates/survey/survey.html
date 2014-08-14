@@ -2,7 +2,24 @@
 <html>
 <head>
 <meta name="viewport" content= "width=device-width, inital-scale=1.0"/>
-
+<script>
+function validateForm() {
+	var elem = document.getElementById('questions').elements;
+	var allQ = []
+	var checkedQ = []
+    for(var i = 0; i < elem.length; i++){
+		if(elem[i].type == "radio"){
+			allQ.push(elem[i].name)
+            if ( elem[i].checked ){
+					checkedQ.push(elem[i].name)
+			}
+}	}
+	if (!(((allQ.length/2) == checkedQ.length) && (checkedQ.length != 0))){
+		alert("All questions must be filled out before submiting");
+        return false;
+		}
+}
+</script>
 </head>
 
 <h1>{{survey.title}}</h1>
@@ -11,7 +28,7 @@
 <pre>"Twitter last updated {{ date.twitterDate }}"</pre>
 {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
 
-<form action="{% url 'survey:answer' survey.id user_id %}" method="post">
+<form id= 'questions' name ='questions' onsubmit="return validateForm()" >
 {% csrf_token %}
 {% for  question in survey.question_set.all %}
         <pre>{{ question.text }}</pre>
@@ -38,7 +55,6 @@
 {% endfor %}
 <input type="submit" value="Submit" />
 </form>
-
 </html>
 
 

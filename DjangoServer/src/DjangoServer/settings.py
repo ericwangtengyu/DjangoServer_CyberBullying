@@ -26,6 +26,10 @@ TEMPLATE_DEBUG = True
 
 ALLOWED_HOSTS = []
 
+TWITTER_CONSUMER_KEY = "BaWtyknv1RwsU60jVccA"
+
+TWITTER_CONSUMER_SECRET = "EDopj7ySkVstUTD294ODgUlmhctGi3PBSkW2OljhhPY"
+
 
 # Application definition
 

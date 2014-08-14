@@ -45,7 +45,7 @@ class sms_conversation(models.Model):
 class sms_message(models.Model):
     conversation = models.ForeignKey(sms_conversation)
     source = models.CharField(max_length=100)
-    recipient = models.CharField(max_length=100)
+    recipient = models.CharField(max_length=1000)
     #key= models.CharField(primary_key=True , max_length=50)
     SmSbody = models.BinaryField()
     created_time = models.DateTimeField()
