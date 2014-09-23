@@ -28,7 +28,7 @@ function validateForm() {
 <pre>"Twitter last updated {{ date.twitterDate }}"</pre>
 {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
 
-<form id= 'questions' name ='questions' onsubmit="return validateForm()" >
+<form id= 'questions' name ='questions' method='POST' onsubmit="return validateForm()" action= "{% url 'survey:answer' survey.id user_id %}">
 {% csrf_token %}
 {% for  question in survey.question_set.all %}
         <pre>{{ question.text }}</pre>

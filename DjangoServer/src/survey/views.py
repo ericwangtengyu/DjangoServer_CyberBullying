@@ -24,6 +24,7 @@ def sendemail(request,survey_id,user_id):
     text = text + "\n \n user_id " + str(user_id) + "\n \nsurvey_id " + str(survey_id)
     send_mail("DATA ERROR" ,text,"mclapp08@gmail.com",["llclaptrapll@gmail.com"])
     return HttpResponse("Thank you problem will be taken care of asap")
+
 def answer(request,survey_id,user_id):
 	survey = get_object_or_404(Survey, pk = survey_id )
 	for question in survey.question_set.all():

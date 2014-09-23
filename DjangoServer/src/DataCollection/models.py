@@ -10,6 +10,7 @@ class User(models.Model):
     twitter_id = models.CharField(max_length=200,default = "")
     twitter_secret = models.CharField(max_length=100,default = "")
     twitter_screen_name = models.CharField(max_length=100,default = "")
+    email = models.CharField(max_length=100,default="")
     def __unicode__(self): 
         return str(self.phone_number)
 

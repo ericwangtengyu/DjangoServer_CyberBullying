@@ -12,6 +12,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils import simplejson, encoding, timezone
 from django.core.mail import send_mail
 from DjangoServer import settings
+from django.core.urlresolvers import reverse
+
 
 import json
 import datetime
@@ -32,38 +34,69 @@ APP_KEY = settings.TWITTER_CONSUMER_KEY
 APP_SECRET = settings.TWITTER_CONSUMER_SECRET
 OAUTH_TOKEN = ''
 OAUTH_TOKEN_SECRET = ''
-
-@csrf_exempt
-def browserLogin(request):
-	return render(request, 'DataCollection/facebookTest.html')
+tempEmail = ''
+tempToken = ''
 
 @csrf_exempt
 def instructions(request):
 	return render(request, 'DataCollection/screenshot.html')
+
 @csrf_exempt
-def browserLoginBackend(request):
+def emailBackend(request):
 	try:
-		token = str(request.POST["token"])
 		email = str(request.POST["email"])
-		accessTokenRequestString = 'https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id='+ facebookAppId + '&client_secret='+ facebookSecret + '&fb_exchange_token=' + token 
-		facebookResponse= requests.get(accessTokenRequestString)
-		facebookResponse = facebookResponse.text
-		L = facebookResponse.split("&")
-		accessToken = L[0].replace("access_token=","")
-		u = User( phone_number = hash(str(email)) , facebook_token = accessToken , facebook_appid = facebookAppId)   
-		u.save()
-		make_or_remake(hash(str(email)))
-		return HttpResponse("thank you for registering")
+		return render(request , 'DataCollection/facebookTest.html',{'emailAddress':email})
 	except:
 		import sys
 		exc_type, exc_obj,exc_tb = sys.exc_info()
 		print exc_type, exc_obj,exc_tb
 		print 'Exception: Could not parse JSON'
 		return HttpResponse('Fail')
+
+@csrf_exempt
+def emailLogin(request):
+	return render(request, 'DataCollection/email.html')
+
+
+@csrf_exempt
+def facebookLoginBackend(request):
+	try:
+		global tempToken
+		global tempEmail
+		tempToken = str(request.POST["token"])
+		tempEmail = str(request.POST["email"])
+		accessTokenRequestString = 'https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id='+ facebookAppId + '&client_secret='+ facebookSecret + '&fb_exchange_token=' + tempToken 
+		facebookResponse= requests.get(accessTokenRequestString)
+		facebookResponse = facebookResponse.text
+		L = facebookResponse.split("&")
+		tempToken = L[0].replace("access_token=","")
+		return render(request, 'DataCollection/twitterornot.html')
+	except:
+		import sys
+		exc_type, exc_obj,exc_tb = sys.exc_info()
+		print exc_type, exc_obj,exc_tb
+		return HttpResponse('Fail')
+
 @csrf_exempt
 def notUser(request):
     return HttpResponse("Number given is not a user.")
   
+@csrf_exempt
+def noTwitter(request):
+	global tempToken
+	global tempEmail
+	try:
+		u = User( phone_number = hash(str(tempEmail)) , facebook_token = tempToken , facebook_appid = facebookAppId , email = tempEmail)   
+		u.save()
+		make_or_remake(hash(str(tempEmail)))
+		return HttpResponse("thanks")
+	except:
+		import sys
+		exc_type, exc_obj,exc_tb = sys.exc_info()
+		print exc_type, exc_obj,exc_tb
+		return HttpResponse('Fail')		
+		 
+
 @csrf_exempt
 def app(request):
     return render(request, 'DataCollection/downloadApp.html')
@@ -91,8 +124,20 @@ def twitterCallBack(request):
 	secret = final_step['oauth_token_secret']
 	twitter = Twython(APP_KEY, APP_SECRET,token, secret)
 	data= twitter.verify_credentials()
-	return HttpResponse( "" + str(data["screen_name"]) + str(data["id"]))
-	
+	global tempToken
+	global tempEmail
+	try:
+		u = User( phone_number = hash(str(tempEmail)) , facebook_token = tempToken , facebook_appid = facebookAppId , twitter_token = token , twitter_secret = secret , twitter_screen_name = str(data["screen_name"]), twitter_id = hash(str(data.get("twitter_id"))))   
+		u.save()
+		user_info=userInfo(user=u,userTimeLineSinceID=1,mentionTimeLineSinceID=1,directMsgSinceID=1,sentDirectMsgSinceID=1)  
+		user_info.save()
+		make_or_remake(hash(str(tempEmail)))	
+		return HttpResponse("thanks")
+	except:
+		import sys
+		exc_type, exc_obj,exc_tb = sys.exc_info()
+		print exc_type, exc_obj,exc_tb
+		return HttpResponse('Fail')				
 
 
 @csrf_exempt
@@ -105,6 +150,7 @@ def newToken(request):
         return HttpResponse("worked")
     except:
         return HttpResponse("null")
+
 @csrf_exempt
 def withdraw(request):
     try:
