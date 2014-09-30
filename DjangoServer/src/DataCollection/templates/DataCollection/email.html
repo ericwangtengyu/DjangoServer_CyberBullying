@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Login Email</title>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Bootstrap,CSS,JQuery,BootstrapJavaScript -->
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ STATIC_URL }}/email.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+<script>
+    $(document).ready(function(){
+        $(".popover-top").popover({
+            placement : 'top'
+        });
+    });
+ $('html').on('click', function(e) {
+  if (typeof $(e.target).data('original-title') == 'undefined' &&
+     !$(e.target).parents().is('.popover.in')) {
+    $('[data-original-title]').popover('hide');
+  }
+});
+</script>
+</head>
+<body>
+
+<div class="container">
+    <div class="alert-message"></div>
+    <div class="panel panel-default login-panel">
+        <div class="panel-heading"><h1>Cyberbullying Registration</h1></div>
+        <div class="panel-body">
+            <div class="brand">
+                <img class="img img-icon" src="{{ STATIC_URL }}/uiowaLogo.png" alt="University of Iowa Logo">
+            </div>
+            <div class="form-container">
+                <form name="loginForm" class="form-signin" method="post" action="{% url 'DataCollection:emailbackend'%}">
+                    <div class="form-group">
+                        <label for="hawkid">Email</label>
+                        <input name="email" type="email" class="form-control" id="email" value="" required="" autofocus="">
+                    </div>
+                    <input type="submit" name="uip_action" value=" Continue " class="btn btn-primary login-button">
+                    <div class="help-text">
+                        <a href="#" class="popover-top" data-toggle="popover" title="Email" data-content="Your email will be used as an ID and to send surveys.">Why do I need to provide my email?</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="custom-text"></div>
+</div>
+</body></html>

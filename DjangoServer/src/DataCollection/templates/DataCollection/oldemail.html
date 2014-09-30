@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Login Email</title>
+<link rel="stylesheet" href="{{ STATIC_URL }}/email.css">
+<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+
+<script LANGUAGE="JavaScript">
+	function emailHandler() {
+    var x, text;
+    //Get the value of input field with id="email"
+    x = document.getElementById("email").value;
+    console.log(x);
+    if (/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}/i.test(x)) {
+		text = "Email address = " + x;
+		post({email: x })
+    } else {
+        text = "Please enter a valid email address";
+    }
+	document.getElementById("emailOutput").innerHTML = text;
+}
+
+
+  function post(params) {
+    method = "post"; 
+
+    var form = document.createElement("form");
+    form.setAttribute("method", method);
+    form.setAttribute("action", "{% url 'DataCollection:emailbackend'%}");
+
+    for(var key in params) {
+        if(params.hasOwnProperty(key)) {
+            var hiddenField = document.createElement("input");
+            hiddenField.setAttribute("type", "hidden");
+            hiddenField.setAttribute("name", key);
+            hiddenField.setAttribute("value", params[key]);
+
+            form.appendChild(hiddenField);
+         }
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+}
+</script>
+
+<div class="container">
+    <form class="form-signin">       
+      <h2 class="form-signin-heading">Please Enter Email</h2>
+      <input type="text" class="form-control" id="email" placeholder="Email Address" required="" autofocus="" >
+      <br> 
+      <input type="button" class="submitButton" onclick="emailHandler()" value="Continue">
+    </form>
+  </div>
+</html>

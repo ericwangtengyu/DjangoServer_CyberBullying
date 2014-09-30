@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Login twitter</title>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Bootstrap,CSS,JQuery,BootstrapJavaScript -->
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ STATIC_URL }}/twitter.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+
+</head>
+<body>
+
+<div class="container">
+    <div class="alert-message"></div>
+    <div class="panel panel-default login-panel">
+        <div class="panel-heading"><h1>Cyberbullying Registration</h1></div>
+        <div class="panel-body">
+            <div class="brand">
+                <img class="img img-icon" src="{{ STATIC_URL }}/uiowaLogo.png" alt="University of Iowa Logo">
+            </div>
+            <div class="form-container">
+                <div class="form-group">
+                    <form name="loginForm" class="form-signin" method="post" action="{% url 'DataCollection:twitterlogin'%}">
+                            <label for="action">Twitter</label><br>
+                            <input type="submit" id="action" value=" Sign in " class="btn btn-primary login-button">
+                    </form>
+                    <form name="loginForm" class="form-signin" method="post" action="{% url 'DataCollection:notwitter'%}">
+                        <input type="submit" id="action" value=" Skip " class="btn btn-primary login-button">
+                    </form>
+                </div>
+                </div>
+            </div>       
+        </div>
+    </div>
+<!--
+<h2>Twitter</h2>
+<form name="input" action="{% url 'DataCollection:twitterlogin'%}" method="post">
+<input type="submit" value="Login to twitter">
+</form>
+<form name="input" action="{% url 'DataCollection:notwitter'%}" method="post">
+<input type="submit" value="Dont have twitter">
+</form>
+-->
+</body>
+</html>
