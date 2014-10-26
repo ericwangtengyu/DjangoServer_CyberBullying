@@ -14,7 +14,7 @@ from django.core.mail import send_mail
 from DjangoServer import settings
 from django.core.urlresolvers import reverse
 
-
+import re
 import json
 import datetime
 import requests
@@ -23,7 +23,13 @@ from twython import Twython
 
 from simplecrypt import encrypt,decrypt
 from dateutil import parser
+from threading import Thread
 
+
+from hashlib import md5
+from Crypto.Cipher import AES
+from Crypto import Random
+import os
 
 
 ip = 'http://128.255.45.52:7777/'
@@ -36,6 +42,7 @@ OAUTH_TOKEN = ''
 OAUTH_TOKEN_SECRET = ''
 tempEmail = ''
 tempToken = ''
+tempPhone = ''
 
 @csrf_exempt
 def instructions(request):
@@ -44,9 +51,12 @@ def instructions(request):
 @csrf_exempt
 def emailBackend(request):
     try:
-        print str(request.POST)
-        email = str(request.POST["email"])
-        return render(request , 'DataCollection/facebookTest.html',{'emailAddress':email})
+        global tempEmail
+        global tempPhone
+        tempEmail = str(request.POST["email"])
+        tempPhone = str(request.POST["phone"])
+        tempPhone = re.sub("[^0-9]", "",tempPhone)
+        return render(request , 'DataCollection/facebookTest.html')
     except:
         import sys
         exc_type, exc_obj,exc_tb = sys.exc_info()
@@ -63,10 +73,8 @@ def emailLogin(request):
 def facebookLoginBackend(request):
 	try:
 		global tempToken
-		global tempEmail
 		print str(request.POST)
 		tempToken = str(request.POST["token"])
-		tempEmail = str(request.POST["email"])
 		accessTokenRequestString = 'https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id='+ facebookAppId + '&client_secret='+ facebookSecret + '&fb_exchange_token=' + tempToken 
 		facebookResponse= requests.get(accessTokenRequestString)
 		facebookResponse = facebookResponse.text
@@ -77,25 +85,28 @@ def facebookLoginBackend(request):
 		import sys
 		exc_type, exc_obj,exc_tb = sys.exc_info()
 		print exc_type, exc_obj,exc_tb
+		print "login backend"
 		return HttpResponse('Fail')
 
 @csrf_exempt
 def notUser(request):
-    return HttpResponse("Number given is not a user.")
+    return HttpResponse("thanks")
   
 @csrf_exempt
 def noTwitter(request):
 	global tempToken
 	global tempEmail
+	global tempPhone
 	try:
-		u = User( phone_number = hash(str(tempEmail)) , facebook_token = tempToken , facebook_appid = facebookAppId , email = tempEmail)   
+		u = User( phone_number = hash(tempPhone) , facebook_token = tempToken , facebook_appid = facebookAppId , email = tempEmail)   
 		u.save()
 		make_or_remake(hash(str(tempEmail)))
-		return HttpResponse("thanks")
+		return render(request, 'DataCollection/thanks.html')
 	except:
 		import sys
 		exc_type, exc_obj,exc_tb = sys.exc_info()
 		print exc_type, exc_obj,exc_tb
+		print "no twitter"
 		return HttpResponse('Fail')		
 		 
 
@@ -128,17 +139,19 @@ def twitterCallBack(request):
 	data= twitter.verify_credentials()
 	global tempToken
 	global tempEmail
+	global tempPhone
 	try:
-		u = User( email=tempEmail,phone_number = hash(str(tempEmail)) , facebook_token = tempToken , facebook_appid = facebookAppId , twitter_token = token , twitter_secret = secret , twitter_screen_name = str(data["screen_name"]), twitter_id = hash(str(data.get("twitter_id"))))   
+		u = User( email=tempEmail,phone_number = hash(tempPhone) , facebook_token = tempToken , facebook_appid = facebookAppId , twitter_token = token , twitter_secret = secret , twitter_screen_name = str(data["screen_name"]), twitter_id = hash(str(data.get("twitter_id"))))   
 		u.save()
 		user_info=userInfo(user=u,userTimeLineSinceID=1,mentionTimeLineSinceID=1,directMsgSinceID=1,sentDirectMsgSinceID=1)  
 		user_info.save()
-		make_or_remake(hash(str(tempEmail)))	
-		return HttpResponse("thanks")
+		make_or_remake(hash(str(tempEmail)))
+		return render(request, 'DataCollection/thanks.html')
 	except:
 		import sys
 		exc_type, exc_obj,exc_tb = sys.exc_info()
 		print exc_type, exc_obj,exc_tb
+		print "twitter callback"
 		return HttpResponse('Fail')				
 
 
@@ -151,6 +164,7 @@ def newToken(request):
         user.save()
         return HttpResponse("worked")
     except:
+        print "new token"
         return HttpResponse("null")
 
 @csrf_exempt
@@ -270,46 +284,72 @@ def upDateSMS(user):
 		newDate = UpdatedDate(user = user, smsDate = timezone.now())
 		newDate.save()
 
+def checkDate(user,otherDate):
+    if UpdatedDate.objects.filter(user = user):
+        D1 = UpdatedDate.objects.get(user = user).smsDate
+        D2 = datetime.datetime.fromtimestamp(long(otherDate))
+        if D1 < D2 :
+            return True
+        return False
+    else:
+        return False
 
 @csrf_exempt    
 def postandroid(request):
-	try:
-		data=json.loads(unicode(request.body, errors='replace'))
-		print request.body
-		user = User.objects.get(phone_number = hash(str(data.get("user"))))
-		upDateSMS(user)
-		conversations = data.get("conversation")
-		for conver in conversations:
-			print str(conver.get("participant"))
-			participantsNOHash = eval(str(conver.get("participant")))
-			participantsHash = []
-			for part in participantsNOHash:
-				participantsHash.append(hash(str(part)))
-			try:
-				conversation = sms_conversation.objects.get(participants=str(participantsHash))
-			except:
-				user.sms_conversation_set.create(participants = str(participantsHash) , last_updated = conver.get("endTime"))
-				conversation = user.sms_conversation_set.get( participants = str(participantsHash))
-			for message in conver.get("messages"):
-				try:
-					createdTime = datetime.datetime.fromtimestamp(float (message.get("createTime"))).strftime('%Y-%m-%d %H:%M:%S')
-				except:
-					import sys
-					exc_type, exc_obj,exc_tb = sys.exc_info()
-					print exc_type, exc_obj,exc_tb
-					print 'Exception: Could not parse JSON'
-				else:
-					text = encrypt(key,message.get("text"))
-					if not conversation.sms_message_set.filter(created_time=createdTime):
-						conversation.sms_message_set.create(source = hash(str(message.get("sPID"))) , recipient = hash(str(message.get("dPID")))  ,SmSbody = text ,created_time = createdTime)
-	except:
-		import sys
-		exc_type, exc_obj,exc_tb = sys.exc_info()
-		print exc_type, exc_obj,exc_tb
-		print 'Exception: Could not parse JSON'
-		return HttpResponse('Fail')
-	return HttpResponse('worked')
+    try:
+        data_to_write_to_file = request.body
+        data=json.loads(unicode(request.body, errors='replace'))
+        print request.body
+        user = User.objects.get(phone_number = hash(str(data.get("user"))))
+        
+        save_data(data_to_write_to_file, "android", user)
+        conversations = data.get("conversation")
+        for conver in conversations:
+            if checkDate(user, conver.get("endTime")):
+                participantsNOHash = eval(str(conver.get("participant")))
+                participantsHash = []
+                for part in participantsNOHash:
+                    participantsHash.append(hash(str(part)))
+                try:
+                    conversation = sms_conversation.objects.get(participants=str(participantsHash))
+                except:
+                    user.sms_conversation_set.create(participants = str(participantsHash) , last_updated = conver.get("endTime"))
+                    conversation = user.sms_conversation_set.get( participants = str(participantsHash))
+                    print "Error inside of post android stuff"
+                for message in conver.get("messages"):
+                    if checkDate(user,message.get("createdTime")):
+                        try:
+                            createdTime = datetime.datetime.fromtimestamp(float (message.get("createTime"))).strftime('%Y-%m-%d %H:%M:%S')
+                        except:
+                            import sys
+                            exc_type, exc_obj,exc_tb = sys.exc_info()
+                            print exc_type, exc_obj,exc_tb
+                            print 'Exception: Could not parse JSON FOR SMS'
+                        else:
+                            text = encrypt(key,message.get("text"))
+                            if not conversation.sms_message_set.filter(created_time=createdTime):
+                                conversation.sms_message_set.create(source = hash(str(message.get("sPID"))) , recipient = hash(str(message.get("dPID")))  ,SmSbody = text ,created_time = createdTime)
+        upDateSMS(user)
+    except:
+        import sys
+        exc_type, exc_obj,exc_tb = sys.exc_info()
+        print exc_type, exc_obj,exc_tb
+        print 'Exception: Could not parse JSON for android'
+        return HttpResponse('Fail')
+    return HttpResponse('worked')
     
+def dateSetUp(user):
+	if UpdatedDate.objects.filter(user = user):
+		D = UpdatedDate.objects.get(user = user)
+		fDate=D.facebookDate
+		fDate=(fDate-datetime.datetime(1970,1,1)).total_seconds()
+		fDate=round(fDate)
+		return fDate
+	else:
+		fDate=(timezone.now()-datetime.datetime(1970,1,1)).total_seconds()
+		fDate=round(fDate)
+		return fDate
+
 def get_all_faceid(request):
     allUser = User.objects.all()
     var = []
@@ -318,13 +358,28 @@ def get_all_faceid(request):
         for x in allUser:
             for con in x.facebook_conversation_set.all():
                 convar.append({"thread_id" : con.thread_id , "updated_time": con.updated_time})
-            var.append({"phone":x.phone_number , "token": x.facebook_token , "info" : convar})
+            var.append({"phone":x.phone_number ,"registerDate": str(dateSetUp(x)), "token": x.facebook_token , "info" : convar})
     except:
         import sys
         exc_type, exc_obj, exc_tb = sys.exc_info()
         print exc_type, exc_tb, exc_obj
+        print "probably not here, but its faceid just in case"
     dump = { "data" : var }
     return HttpResponse(json.dumps(dump), content_type="application/json")
+
+def TdateSetUp(user):
+	if UpdatedDate.objects.filter(user = user):
+		D = UpdatedDate.objects.get(user = user)
+		tDate=D.twitterDate
+		if tDate == None:
+			return
+		tDate=(tDate-datetime.datetime(1970,1,1)).total_seconds()
+		tDate=round(tDate)
+		return tDate
+	else:
+		tDate=(timezone.now()-datetime.datetime(1970,1,1)).total_seconds()
+		tDate=round(tDate)
+		return tDate
 
 def get_all_twitter(request):
     allUser = User.objects.all()
@@ -332,10 +387,10 @@ def get_all_twitter(request):
     for x in allUser:
         if userInfo.objects.filter(user=x):
             uf=userInfo.objects.get(user=x)
-            var.append({"twitter_token": x.twitter_token ,"twitter_id": x.twitter_id , "twitter_secret": x.twitter_secret,"userTimeLineSinceID": uf.userTimeLineSinceID ,"mentionTimeLineSinceID": uf.mentionTimeLineSinceID , "directMsgSinceID": uf.directMsgSinceID,"sentDirectMsgSinceID":uf.sentDirectMsgSinceID})
+            var.append({"registerDate": str(TdateSetUp(x)),"twitter_token": x.twitter_token ,"twitter_id": x.twitter_id , "twitter_secret": x.twitter_secret,"userTimeLineSinceID": uf.userTimeLineSinceID ,"mentionTimeLineSinceID": uf.mentionTimeLineSinceID , "directMsgSinceID": uf.directMsgSinceID,"sentDirectMsgSinceID":uf.sentDirectMsgSinceID})
         else:
             empty="1"
-            var.append({"twitter_token": x.twitter_token ,"twitter_id": x.twitter_id , "twitter_secret": x.twitter_secret,"userTimeLineSinceID": empty ,"mentionTimeLineSinceID": empty , "directMsgSinceID": empty,"sentDirectMsgSinceID":empty})
+            var.append({"registerDate": str(TdateSetUp(x)),"twitter_token": x.twitter_token ,"twitter_id": x.twitter_id , "twitter_secret": x.twitter_secret,"userTimeLineSinceID": empty ,"mentionTimeLineSinceID": empty , "directMsgSinceID": empty,"sentDirectMsgSinceID":empty})
     dump = { "data" : var }
     return HttpResponse(json.dumps(dump), content_type="application/json")
 
@@ -345,12 +400,13 @@ def get_all_user(request):
     print data
     return HttpResponse(data, content_type="application/json")
 
-	
-	
+
 # Stops a user from having two sets of survey data if the re-register	
 def make_or_remake(phone_number):
     try:
         user = User.objects.get(phone_number = phone_number)
+        newDate = UpdatedDate(user = user, smsDate = timezone.now(),twitterDate = timezone.now(),facebookDate = timezone.now())
+        newDate.save()
         servey = SurveyData.objects.get(user = user)
     except:
         surveydata = SurveyData(user = user)
@@ -400,17 +456,82 @@ def upDateFacebook(user):
 		newDate = UpdatedDate(user = user, facebookDate = timezone.now())
 		newDate.save()
 
+def save_data(data_to_write_to_file, type_name, user):
+    filename = str(str(timezone.now()) + "_" + str(type_name) + "_" + str(user.phone_number) + ".jsondump")
+    
+    folder_path = "/home/clapp/Documents/DataCollectionDjango/DjangoServer_CyberBullying/DjangoServer/src/jsonDump/"
+    path = os.path.dirname(folder_path)
+    if not os.path.exists(path):
+        os.makedirs(path)
+    f = open(folder_path + filename,'w')
+    f.write(data_to_write_to_file)
+    f.close()
+    
+    thread = Thread(target = encrypt_json_file, args = (folder_path, filename,))
+    thread.start()
+    
+#    with open(in_filename, 'rb') as in_file, open(out_filename, 'wb') as out_file:
+#        file_decrypt(in_file, out_file, password)
+#end def
+
+def encrypt_json_file(folder_path, filename):
+    with open(folder_path + filename, 'rb') as in_file, open(folder_path + filename + ".encrypted", 'wb') as out_file:
+        file_encrypt(in_file, out_file, key)
+    os.remove(folder_path + filename)
+
+def derive_key_and_iv(password, salt, key_length, iv_length):
+    d = d_i = ''
+    while len(d) < key_length + iv_length:
+        d_i = md5(d_i + password + salt).digest()
+        d += d_i
+    return d[:key_length], d[key_length:key_length+iv_length]
+
+def file_encrypt(in_file, out_file, password, key_length=32):
+    bs = AES.block_size
+    salt = Random.new().read(bs - len('Salted__'))
+    key, iv = derive_key_and_iv(password, salt, key_length, bs)
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+    out_file.write('Salted__' + salt)
+    finished = False
+    while not finished:
+        chunk = in_file.read(1024 * bs)
+        if len(chunk) == 0 or len(chunk) % bs != 0:
+            padding_length = (bs - len(chunk) % bs) or bs
+            chunk += padding_length * chr(padding_length)
+            finished = True
+        out_file.write(cipher.encrypt(chunk))
+
+def file_decrypt(in_file, out_file, password, key_length=32):
+    bs = AES.block_size
+    salt = in_file.read(bs)[len('Salted__'):]
+    key, iv = derive_key_and_iv(password, salt, key_length, bs)
+    cipher = AES.new(key, AES.MODE_CBC, iv)
+    next_chunk = ''
+    finished = False
+    while not finished:
+        chunk, next_chunk = next_chunk, cipher.decrypt(in_file.read(1024 * bs))
+        if len(next_chunk) == 0:
+            padding_length = ord(chunk[-1])
+            chunk = chunk[:-padding_length]
+            finished = True
+        out_file.write(chunk)
+
 @csrf_exempt     
 def facebook_post(request):
 	try:
 		#SAVE DATA BEFORE DOING THIS (just in case)
 		# please
-		data = json.loads(unicode(request.body, errors='replace'))
-		print data
+		data_to_write_to_file = request.body
+		data = unicode(request.body, errors='ignore')
+		data = data.replace("\u", "")
+		data = json.loads(data)
 		user = User.objects.get(pk = data.get("user"))
 		upDateFacebook(user)
 		conversations = data.get("conversation_data")
 		stream_objects = data.get("stream_data")
+		
+		save_data(data_to_write_to_file, "facebook", user)
+
 		
 		# Update the database with the new conversation data
 		handle_facebook_conversations(conversations, user, data)
@@ -418,13 +539,12 @@ def facebook_post(request):
 		# Update the database with the new activites
 		handle_facebook_activities(stream_objects, user, data)
 		
-    
 			
 	except:
+		import traceback
 		import sys
-		exc_type, exc_obj, exc_tb = sys.exc_info()
-		print exc_type, exc_tb, exc_obj
-		print 'Exception: Could not parse JSON'
+		print 'print_exc():'
+		traceback.print_exc(file=sys.stdout)
 	return HttpResponse('done')
 
 def handle_facebook_activities(stream_objects, user, data):
@@ -466,37 +586,45 @@ def handle_facebook_activities(stream_objects, user, data):
 											   place = activityJSON.get("place", {})
 											 )
 											 
-		activity = user.facebook_activity_set.get( post_id = activityJSON.get("id") )
-		if type(activityJSON.get("comments").get("data")) != 'NoneType':
-			if len(activityJSON.get("comments").get("data")) != 0:
-				for commentJSON in activityJSON.get("comments").get("data"):
-					text = encrypt(key, commentJSON.get("message"))
-					like_count = commentJSON.get("like_count")
-					from_id = hash(str(commentJSON.get("from").get("id")))
-					user_likes = str(commentJSON.get("user_likes")).upper() == "TRUE"
-					comment_id = commentJSON.get("id")
-					can_remove = str(commentJSON.get("can_remove")).upper() == "TRUE"
-					created_time = parser.parse(commentJSON.get("created_time")).strftime('%Y-%m-%d %H:%M:%S')
-					if not activity.facebook_comments_set.filter(comment_id = comment_id):
-						activity.facebook_comments_set.create( text = text,
-															   like_count = like_count,
-															   from_id = from_id,
-															   user_likes = user_likes,
-															   comment_id = comment_id,
-															   can_remove = can_remove,
-															   created_time = created_time
-															 )
-				#end for
-			#end if
-		#end if
-		if (type(activityJSON.get("likes").get("data"))) != 'NoneType':
-			if len(activityJSON.get("likes").get('data')) != 0:
-				for likeJSON in activityJSON.get("likes").get("data"):
-					if not activity.facebook_likes_set.filter(from_id=likeJSON.get("id")):
-						activity.facebook_likes_set.create(from_id = likeJSON.get("id"))
-				#end for
-			#end if
-		#end if
+		try:
+			if user.facebook_activity_set.filter(post_id = activityJSON.get("id") ): #Only add comments to something we have in the database\
+				activity = user.facebook_activity_set.get( post_id = activityJSON.get("id") )
+				if type(activityJSON.get("comments").get("data")) != 'NoneType':
+					if len(activityJSON.get("comments").get("data")) != 0:
+						for commentJSON in activityJSON.get("comments").get("data"):
+							text = encrypt(key, commentJSON.get("message"))
+							like_count = commentJSON.get("like_count")
+							from_id = hash(str(commentJSON.get("from").get("id")))
+							user_likes = str(commentJSON.get("user_likes")).upper() == "TRUE"
+							comment_id = commentJSON.get("id")
+							can_remove = str(commentJSON.get("can_remove")).upper() == "TRUE"
+							created_time = parser.parse(commentJSON.get("created_time")).strftime('%Y-%m-%d %H:%M:%S')
+							if not activity.facebook_comments_set.filter(comment_id = comment_id):
+								activity.facebook_comments_set.create( text = text,
+																	   like_count = like_count,
+																	   from_id = from_id,
+																	   user_likes = user_likes,
+																	   comment_id = comment_id,
+																	   can_remove = can_remove,
+																	   created_time = created_time
+																	 )
+						#end for
+					#end if
+				#end if
+				if (type(activityJSON.get("likes").get("data"))) != 'NoneType':
+					if len(activityJSON.get("likes").get('data')) != 0:
+						for likeJSON in activityJSON.get("likes").get("data"):
+							if not activity.facebook_likes_set.filter(from_id=likeJSON.get("id")):
+								activity.facebook_likes_set.create(from_id = likeJSON.get("id"))
+						#end for
+					#end if
+				#end if
+			#endif
+		except:
+			print "shit, we're here"
+			import sys
+			exc_type, exc_obj, exc_tb = sys.exc_info()
+			print exc_type, exc_tb, exc_obj
 	#end for
 #end def handle_facebook_activities
 
@@ -508,6 +636,7 @@ def handle_facebook_conversations(conversations, user, data):
 		if facebook_conversation.objects.filter(thread_id=conversationJSON.get("id")):
 			# We have it
 			conversation = facebook_conversation.objects.get(pk=conversationJSON.get("id"))
+			conversation.updated_time = parser.parse(conversationJSON.get("updated_time")).strftime("%s")
 			
 			# If you haven't been added into the database conversation, add your user to it
 			if not conversation.user.filter(pk=data.get("user")):
@@ -561,6 +690,7 @@ def handle_facebook_conversations(conversations, user, data):
 														  )
 			#end if
 		#end for
+		conversation.save()
 	#end for
 #end def handle_facebook_conversations
 
@@ -602,6 +732,7 @@ def twitter_post(request):
                 import sys
                 exc_type, exc_obj, exc_tb = sys.exc_info()
                 print exc_type, exc_tb, exc_obj
+                print "please no"
             c.users.add(p);
             print "step4"
             messages=conversation.get("messages")
@@ -628,11 +759,14 @@ def twitter_post(request):
 @csrf_exempt     
 def twitter_post_separate(request):
     try:
+        data_to_write_to_file = request.body
         result = json.loads(unicode(request.body, errors='replace'))
         userTwitterID=result.get("user")
         conversationData=result.get("conversationData")
         statusData=result.get("statusData")
         p=User.objects.get(twitter_id=userTwitterID)
+        
+        save_data(data_to_write_to_file, "twitter", user = p)
         upDateTwitter(p)
         userInfo.objects.filter(user=p).update(userTimeLineSinceID=result.get("userTimeLineSinceID"),mentionTimeLineSinceID=result.get("mentionTimeLineSinceID"),directMsgSinceID=result.get("directMsgSinceID"),sentDirectMsgSinceID=result.get("sentDirectMsgSinceID"))
         for conversation in conversationData: 
@@ -671,6 +805,7 @@ def twitter_post_separate(request):
         import sys
         exc_type, exc_obj, exc_tb = sys.exc_info()
         print exc_type, exc_tb, exc_obj
+        print "Twitter post error"
     return HttpResponse('done')
 
 @csrf_exempt     

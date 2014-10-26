@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Login Email</title>
+<title>Thanks</title>
 <meta charset="UTF-8">
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- Bootstrap,CSS,JQuery,BootstrapJavaScript -->
     <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
-    <link rel="stylesheet" href="{{ STATIC_URL }}/email.css">
+    <link rel="stylesheet" href="{{ STATIC_URL }}/thanks.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
     <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
 <script>
@@ -22,6 +22,7 @@
     $('[data-original-title]').popover('hide');
   }
 });
+
 </script>
 </head>
 <body>
@@ -35,18 +36,7 @@
                 <img class="img img-icon" src="{{ STATIC_URL }}/uiowaLogo.png" alt="University of Iowa Logo">
             </div>
             <div class="form-container">
-                <form name="loginForm" class="form-signin" method="post" action="{% url 'DataCollection:emailbackend'%}">
-                    <div class="form-group">
-                        <label for="email">Email</label>
-                        <input name="email" type="email" class="form-control" id="email" value="" required="" autofocus="">
-						<label for="phone">Cell Phone</label>
-                        <input name="phone"  placeholder="(xxx)xxx-xxxx" class="form-control" id="phone" value="" required="" autofocus="">
-                    </div>
-                    <input type="submit" name="uip_action" value=" Continue " class="btn btn-primary login-button">
-                    <div class="help-text">
-                        <a href="#" class="popover-top" data-toggle="popover" title="Email" data-content="Your email will be used as an ID and to send surveys.">Why do I need to provide my email?</a>
-                    </div>
-                </form>
+                    Thank you for registering
             </div>
         </div>
     </div>

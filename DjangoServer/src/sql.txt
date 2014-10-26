@@ -1,0 +1,200 @@
+BEGIN;
+CREATE TABLE "DataCollection_user" (
+    "phone_number" varchar(100) NOT NULL PRIMARY KEY,
+    "facebook_token" text NOT NULL,
+    "facebook_appid" varchar(100) NOT NULL,
+    "twitter_token" varchar(100) NOT NULL,
+    "twitter_id" varchar(200) NOT NULL,
+    "twitter_secret" varchar(100) NOT NULL,
+    "twitter_screen_name" varchar(100) NOT NULL,
+    "email" varchar(100) NOT NULL
+)
+;
+CREATE TABLE "DataCollection_updateddate" (
+    "id" integer NOT NULL PRIMARY KEY,
+    "user_id" varchar(100) NOT NULL REFERENCES "DataCollection_user" ("phone_number"),
+    "facebookDate" datetime,
+    "twitterDate" datetime,
+    "smsDate" datetime
+)
+;
+CREATE TABLE "DataCollection_surveydata" (
+    "id" integer NOT NULL PRIMARY KEY,
+    "user_id" varchar(100) NOT NULL REFERENCES "DataCollection_user" ("phone_number"),
+    "surveydata" text NOT NULL
+)
+;
+CREATE TABLE "DataCollection_userinfo" (
+    "user_id" varchar(100) NOT NULL PRIMARY KEY REFERENCES "DataCollection_user" ("phone_number"),
+    "userTimeLineSinceID" varchar(100) NOT NULL,
+    "mentionTimeLineSinceID" varchar(100) NOT NULL,
+    "directMsgSinceID" varchar(100) NOT NULL,
+    "sentDirectMsgSinceID" varchar(100) NOT NULL
+)
+;
+CREATE TABLE "DataCollection_sms_conversation_user" (
+    "id" integer NOT NULL PRIMARY KEY,
+    "sms_conversation_id" integer NOT NULL,
+    "user_id" varchar(100) NOT NULL REFERENCES "DataCollection_user" ("phone_number"),
+    UNIQUE ("sms_conversation_id", "user_id")
+)
+;
+CREATE TABLE "DataCollection_sms_conversation" (
+    "id" integer NOT NULL PRIMARY KEY,
+    "participants" text NOT NULL UNIQUE,
+    "last_updated" varchar(100) NOT NULL
+)
+;
+CREATE TABLE "DataCollection_sms_message" (
+    "id" integer NOT NULL PRIMARY KEY,
+    "conversation_id" integer NOT NULL REFERENCES "DataCollection_sms_conversation" ("id"),
+    "source" varchar(100) NOT NULL,
+    "recipient" varchar(1000) NOT NULL,
+    "SmSbody" BLOB NOT NULL,
+    "created_time" datetime NOT NULL
+)
+;
+CREATE TABLE "DataCollection_facebook_conversation_user" (
+    "id" integer NOT NULL PRIMARY KEY,
+    "facebook_conversation_id" varchar(100) NOT NULL,
+    "user_id" varchar(100) NOT NULL REFERENCES "DataCollection_user" ("phone_number"),
+    UNIQUE ("facebook_conversation_id", "user_id")
+)
+;
+CREATE TABLE "DataCollection_facebook_conversation" (
+    "message_count" integer NOT NULL,
+    "thread_id" varchar(100) NOT NULL PRIMARY KEY,
+    "updated_time" varchar(50) NOT NULL,
+    "unread" varchar(50) NOT NULL,
+    "unseen" integer NOT NULL,
+    "recipients" varchar(500) NOT NULL
+)
+;
+CREATE TABLE "DataCollection_facebook_messages" (
+    "mID" varchar(100) NOT NULL PRIMARY KEY,
+    "conversation_id" varchar(100) NOT NULL REFERENCES "DataCollection_facebook_conversation" ("thread_id"),
+    "author_id" varchar(100) NOT NULL,
+    "body" BLOB NOT NULL,
+    "created_time" datetime NOT NULL
+)
+;
+CREATE TABLE "DataCollection_facebook_activity" (
+    "id" integer NOT NULL PRIMARY KEY,
+    "user_id" varchar(100) NOT NULL REFERENCES "DataCollection_user" ("phone_number"),
+    "post_id" varchar(100) NOT NULL UNIQUE,
+    "updated_time" datetime NOT NULL,
+    "created_time" datetime NOT NULL,
+    "caption" BLOB NOT NULL,
+    "description" BLOB NOT NULL,
+    "message" BLOB NOT NULL,
+    "status_type" BLOB NOT NULL,
+    "story" BLOB NOT NULL,
+    "story_type" BLOB NOT NULL,
+    "link" BLOB NOT NULL,
+    "source" BLOB NOT NULL,
+    "story_tags" text NOT NULL,
+    "with_tags" text NOT NULL,
+    "message_tags" text NOT NULL,
+    "privacy" text NOT NULL,
+    "place" text NOT NULL
+)
+;
+CREATE TABLE "DataCollection_facebook_comments" (
+    "id" integer NOT NULL PRIMARY KEY,
+    "activity_id" integer NOT NULL REFERENCES "DataCollection_facebook_activity" ("id"),
+    "from_id" varchar(100) NOT NULL,
+    "text" BLOB NOT NULL,
+    "like_count" integer NOT NULL,
+    "user_likes" bool NOT NULL,
+    "comment_id" varchar(100) NOT NULL,
+    "can_remove" bool NOT NULL,
+    "created_time" datetime NOT NULL
+)
+;
+CREATE TABLE "DataCollection_facebook_likes" (
+    "id" integer NOT NULL PRIMARY KEY,
+    "activity_id" integer NOT NULL REFERENCES "DataCollection_facebook_activity" ("id"),
+    "from_id" varchar(100) NOT NULL
+)
+;
+CREATE TABLE "DataCollection_twitter_conversation_users" (
+    "id" integer NOT NULL PRIMARY KEY,
+    "twitter_conversation_id" varchar(200) NOT NULL,
+    "user_id" varchar(100) NOT NULL REFERENCES "DataCollection_user" ("phone_number"),
+    UNIQUE ("twitter_conversation_id", "user_id")
+)
+;
+CREATE TABLE "DataCollection_twitter_conversation" (
+    "cID" varchar(200) NOT NULL PRIMARY KEY,
+    "message_count" integer NOT NULL,
+    "startTime" varchar(50) NOT NULL,
+    "endTime" varchar(50) NOT NULL,
+    "startID" varchar(100) NOT NULL,
+    "endID" varchar(100) NOT NULL,
+    "type" integer NOT NULL
+)
+;
+CREATE TABLE "DataCollection_twitter_direct_conversation_users" (
+    "id" integer NOT NULL PRIMARY KEY,
+    "twitter_direct_conversation_id" varchar(200) NOT NULL,
+    "user_id" varchar(100) NOT NULL REFERENCES "DataCollection_user" ("phone_number"),
+    UNIQUE ("twitter_direct_conversation_id", "user_id")
+)
+;
+CREATE TABLE "DataCollection_twitter_direct_conversation" (
+    "cID" varchar(200) NOT NULL PRIMARY KEY,
+    "message_count" integer NOT NULL,
+    "startTime" varchar(50) NOT NULL,
+    "endTime" varchar(50) NOT NULL,
+    "startID" varchar(100) NOT NULL,
+    "endID" varchar(100) NOT NULL,
+    "type" integer NOT NULL
+)
+;
+CREATE TABLE "DataCollection_twitter_message" (
+    "mID" varchar(200) NOT NULL PRIMARY KEY,
+    "conversations_id" varchar(200) NOT NULL REFERENCES "DataCollection_twitter_direct_conversation" ("cID"),
+    "fromID" varchar(100) NOT NULL,
+    "toID" varchar(100) NOT NULL,
+    "body" varchar(500) NOT NULL,
+    "created_time" datetime NOT NULL,
+    "inReplyToStatusID" varchar(100) NOT NULL
+)
+;
+CREATE TABLE "DataCollection_twitter_status_mentionor" (
+    "id" integer NOT NULL PRIMARY KEY,
+    "twitter_status_id" varchar(100) NOT NULL,
+    "user_id" varchar(100) NOT NULL REFERENCES "DataCollection_user" ("phone_number"),
+    UNIQUE ("twitter_status_id", "user_id")
+)
+;
+CREATE TABLE "DataCollection_twitter_status" (
+    "mID" varchar(100) NOT NULL PRIMARY KEY,
+    "author_id" varchar(100) REFERENCES "DataCollection_user" ("phone_number"),
+    "body" varchar(100) NOT NULL,
+    "created_time" datetime NOT NULL,
+    "inReplyToStatusID" varchar(100)
+)
+;
+CREATE TABLE "survey_survey" (
+    "id" integer NOT NULL PRIMARY KEY,
+    "title" varchar(150) NOT NULL,
+    "created_date" datetime NOT NULL
+)
+;
+CREATE TABLE "survey_question" (
+    "id" integer NOT NULL PRIMARY KEY,
+    "atype" integer NOT NULL,
+    "text" varchar(1000) NOT NULL,
+    "answer" varchar(500) NOT NULL,
+    "survey_id" integer NOT NULL REFERENCES "survey_survey" ("id")
+)
+;
+CREATE TABLE "survey_choice" (
+    "id" integer NOT NULL PRIMARY KEY,
+    "question_id" integer NOT NULL REFERENCES "survey_question" ("id"),
+    "choice_text" varchar(500) NOT NULL
+)
+;
+
+COMMIT;

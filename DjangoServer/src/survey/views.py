@@ -12,6 +12,12 @@ from .models import Survey, Question,Choice
 from DataCollection.models import User, SurveyData, UpdatedDate
 from django.core.mail import send_mail
 import json
+import subprocess
+
+
+def refresh(request):
+    subprocess.call(['java','-jar','/home/clapp/Documents/DataCollectionJava/server-side-collection/collectAllData.jar'])
+    return HttpResponse("Updateing facebook ")
 
 def survey(request , survey_id , user_id):
 	user = get_object_or_404(User, pk = user_id )
@@ -22,7 +28,7 @@ def survey(request , survey_id , user_id):
 def sendemail(request,survey_id,user_id):
     text = request.POST["textbox"]
     text = text + "\n \n user_id " + str(user_id) + "\n \nsurvey_id " + str(survey_id)
-    send_mail("DATA ERROR" ,text,"mclapp08@gmail.com",["llclaptrapll@gmail.com"])
+    send_mail("DATA ERROR" ,text,"cyber-bullying@uiowa.edu",["llclaptrapll@gmail.com"])
     return HttpResponse("Thank you problem will be taken care of asap")
 
 def answer(request,survey_id,user_id):

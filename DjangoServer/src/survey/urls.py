@@ -14,4 +14,5 @@ urlpatterns = patterns('',
    url(r'^(?P<survey_id>\d+)/results/$', views.results,name='results'),
    url(r'^(?P<survey_id>\d+)/(?P<user_id>-?\d+)/email/$', views.email,name='email'),
    url(r'^(?P<survey_id>\d+)/(?P<user_id>-?\d+)/sendemail/$', views.sendemail,name='sendemail'),
+   url(r'^refresh/$', views.refresh,name='refresh'),
 )

@@ -1,0 +1,15 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content= "width=device-width, inital-scale=1.0"/>
+
+</head>
+
+<form action="{% url 'survey:sendemail' survey_id  user_id %}" method="post">
+{% csrf_token %}
+<pre>Please briefly describe the data was missing</pre>
+<textarea name = "textbox" id = "textbox"></textarea><br />
+<input type="submit" value="Submit" />
+</form>
+
+</html>

@@ -26,10 +26,6 @@ TEMPLATE_DEBUG = True
 
 ALLOWED_HOSTS = []
 
-TWITTER_CONSUMER_KEY = "BaWtyknv1RwsU60jVccA"
-
-TWITTER_CONSUMER_SECRET = "EDopj7ySkVstUTD294ODgUlmhctGi3PBSkW2OljhhPY"
-
 
 # Application definition
 
@@ -77,11 +73,13 @@ USE_I18N = True
 
 USE_L10N = True
 
-EMAIL_USE_TLS = True
-EMAIL_HOST = 'email.uiowa.edu'
-EMAIL_HOST_USER = 'clapp@uiowa.edu'
-EMAIL_HOST_PASSWORD = '2015IsMyLastYear'
+USE_TZ = True
+
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST_USER = 'mclapp08@gmail.com'
+EMAIL_HOST_PASSWORD = 'openMaxc1234'
 EMAIL_PORT = 587
+EMAIL_USE_TLS = True
 
 
 # Static files (CSS, JavaScript, Images)
@@ -107,13 +105,13 @@ LOGGING = {
         'app': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': '/home/clapp/Documents/CyberServer.log',
+            'filename': 'CyberServer.log',
             'formatter': 'verbose'
         },
          'jango': {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
-            'filename': '/home/clapp/Documents/CyberServer.log',
+            'filename': 'CyberServer.log',
             'formatter': 'simple'
         },
     },
