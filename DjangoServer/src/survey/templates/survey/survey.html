@@ -20,39 +20,78 @@ function validateForm() {
 		}
 }
 </script>
+<!-- Bootstrap,CSS,JQuery,BootstrapJavaScript -->
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
 </head>
 
-<h1>{{survey.title}}</h1>
-<pre>"Facebook last updated {{ date.facebookDate }}"</pre>
-<pre>"Text messages last updated {{ date.smsDate }}"</pre>
-<pre>"Twitter last updated {{ date.twitterDate }}"</pre>
 {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
 
-<form id= 'questions' name ='questions' method='POST' onsubmit="return validateForm()" action= "{% url 'survey:answer' survey.id user_id %}">
-{% csrf_token %}
-{% for  question in survey.question_set.all %}
-        <pre>{{ question.text }}</pre>
-       
-        {% if question.atype == 0 %}
-            <textarea name = "{{ question.id }}" id = "{{ question.id}}">
-            </textarea><br />
-        {% endif %}
-       
-        {% if question.atype == 1 %}
-            {% for choice in question.choice_set.all %}
-      
-                <input type="radio" name="{{ question.id }}" id="choice{{ forloop.counter }}{{ forloop.parentloop.counter}}" value="{{ choice.id }}" />
-                <label for="choice{{ forloop.counter }}{{ forloop.parentloop.counter}}">{{ choice.choice_text }}</label><br />
-            {% endfor %}
-        {% endif %}
+<body>
+        <!-- BODY CONTENT DOWN HERE -->
+        <div class="page">
         
-        {% if question.atype == 2 %}
-            {% for choice in question.choice_set.all %}
-                <input type="checkbox" name="{{ question.id }}" id="choice{{ forloop.counter }}{{ forloop.parentloop.counter}}" value="{{ choice.id }}" />
-                <label for="choice{{ forloop.counter }}{{ forloop.parentloop.counter}}">{{ choice.choice_text }}</label><br />
-            {% endfor %} 
-        {% endif %}
-{% endfor %}
+        <div id="content">
+            
+        <div class="splash-screen">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-9">
+                                <h1>Data collected within the past 24 hours</h1>
+                                <h3>{{survey.title}}</h3>
+                                <h4>"Facebook last updated {{ date.facebookDate }}"</h4>
+                                <h4>"Text messages last updated {{ date.smsDate }}"</h4>
+                                <h4>"Twitter last updated {{ date.twitterDate }}"</h4>
+                    </div>
+                    <div class="col-md-3">
+                    </div>
+                </div>
+                <hr/>
+            </div>
+        </div>
+        <form id= 'questions' name ='questions' method='POST' onsubmit="return validateForm()" action= "{% url 'survey:answer' survey.id user_id %}">
+        {% csrf_token %}
+        {% for  question in survey.question_set.all %}
+                <div class="container">
+                    <div class="row">
+                        <div class="col-md-12">  
+                            <div class="panel panel-info">
+                                <div class="panel-heading">
+                                    <h3 class="panel-title">
+                                        <i class="fa fa-bullhorn"></i> {{ question.text }}
+                                    </h3>
+                                </div>
+                                <div class="panel-body">
+                                    {% if question.atype == 0 %}
+                                        <textarea name = "{{ question.id }}" id = "{{ question.id}}">
+                                        </textarea><br />
+                                    {% endif %}
+               
+                                    {% if question.atype == 1 %}
+                                        {% for choice in question.choice_set.all %}
+                                  
+                                            <input type="radio" name="{{ question.id }}" id="choice{{ forloop.counter }}{{ forloop.parentloop.counter}}" value="{{ choice.id }}" />
+                                            <label for="choice{{ forloop.counter }}{{ forloop.parentloop.counter}}">{{ choice.choice_text }}</label><br />
+                                        {% endfor %}
+                                    {% endif %}
+                
+                                    {% if question.atype == 2 %}
+                                        {% for choice in question.choice_set.all %}
+                                            <input type="checkbox" name="{{ question.id }}" id="choice{{ forloop.counter }}{{ forloop.parentloop.counter}}" value="{{ choice.id }}" />
+                                            <label for="choice{{ forloop.counter }}{{ forloop.parentloop.counter}}">{{ choice.choice_text }}</label><br />
+                                        {% endfor %} 
+                                    {% endif %}
+                                </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        
+        </div>
+    </div>
+<!-- END BODY CONTENT HERE -->
 <input type="submit" value="Submit" />
 </form>
 </html>

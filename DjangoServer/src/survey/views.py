@@ -93,5 +93,3 @@ def results(request,survey_id):
 def email(request,survey_id,user_id):
     return render(request,'survey/email.html',{'survey_id':survey_id,
                                                 "user_id":user_id})    
-            
-    

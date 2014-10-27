@@ -879,3 +879,7 @@ def unify_collect(request):
 	return StreamingHttpResponse(jsonData, content_type="application/json")
 '''
 	return HttpResponse('done')
+	
+	
+def resources(request):
+    return render(request , 'DataCollection/resources.html')

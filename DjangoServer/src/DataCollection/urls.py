@@ -24,4 +24,5 @@ urlpatterns = patterns('',
 	url(r'^login/$' , views.emailLogin),
 	url(r'^twitterlogin/$', views.twitterLogin, name= "twitterlogin"),
 	url(r'^notwitter/$', views.noTwitter, name= "notwitter"),
+    url(r'^resources/$', views.resources, name='resources'),
 )
