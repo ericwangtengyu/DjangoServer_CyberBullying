@@ -64,7 +64,7 @@ class sms_message(models.Model):
     SmSbody = models.BinaryField()
     created_time = models.DateTimeField()
     def from_last_day(self):
-        return self.created_time >= timezone.now() - datetime.timedelta(days=1)
+        return self.created_time >= timezone.now() - datetime.timedelta(hours=19)
 
 #-----------------------------------------------------------------------
 #-----------------------------------------------------------------------

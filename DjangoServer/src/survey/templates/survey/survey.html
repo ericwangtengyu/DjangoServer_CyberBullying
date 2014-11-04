@@ -59,10 +59,11 @@ function validateForm() {
                             <div class="panel panel-info">
                                 <div class="panel-heading">
                                     <h3 class="panel-title">
-                                        <i class="fa fa-bullhorn"></i> {{ question.text }}
+                                        <i class="fa fa-bullhorn"></i> Collection subset
                                     </h3>
                                 </div>
                                 <div class="panel-body">
+				    <pre>{{ question.text }}</pre>
                                     {% if question.atype == 0 %}
                                         <textarea name = "{{ question.id }}" id = "{{ question.id}}">
                                         </textarea><br />
