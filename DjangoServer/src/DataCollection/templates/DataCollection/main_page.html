@@ -6,7 +6,7 @@
             <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
             <meta http-equiv="content-type" content="text/html;charset=UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=0">
-            <title>
+	    <title>
             Iowa Cyberbullying Study
             </title>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
@@ -18,7 +18,14 @@
 
 <!-- Latest compiled and minified JavaScript -->
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>	
-
+ <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ STATIC_URL }}/screenshot.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+<style>
+.carousel-control.left, .carousel-control.right {
+    background-image: none
+}
+</style>
 </head>
         <body>
 <!-- BODY CONTENT DOWN HERE -->
@@ -92,7 +99,7 @@
         <blockquote><h2>"Cyberbullying is a growing problem.  We need to know how cyberbullying occurs so we can stop it."</h2></blockquote>
         <hr>
 	<div class="row">
-        	<div class="span4 collapse-group">
+        	<div class="col-md-12 span4 collapse-group">
           <p><a class="btn ptn-large btn-primary" data-toggle="collapse" data-target="#viewdetails">View Study Details &raquo;</a></p>
            <div class="collapse" id="viewdetails">
         <h3 id="sec1">Activity 1</h3>
@@ -157,7 +164,7 @@
         <a href="mailto:rebecca-bruening@uiowa.edu"><button class="btn btn-primary" style=".{float-center}">Contact Us!</button></a>
         <hr>
 
-        <h3 id="sec3">Already enrolled in the study? Take the first online study NOW!</h3>
+        <h3 id="sec3">Already enrolled in the study? Take the first online survey NOW!</h3>
                 <p>
                 If you have already completed and sent us your recruitment forms (consent, assent, and contact information) and you have received your online survey login information from the study team, click the “Take the Survey Now” button to go directly to the first survey. When prompted, enter your unique login information to get started. 
         		</p>
