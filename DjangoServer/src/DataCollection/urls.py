@@ -28,6 +28,9 @@ urlpatterns = patterns('',
 	url(r'^(?i)surveylogin/$', views.surveyLogin, name= "surveylogin"),
 	url(r'^(?i)startlogin/$', views.startLogin, name= "startlogin"),
 	url(r'^(?i)sendsurvey/$', views.sendOutSurvey, name= "sendsurvey"),
-	url(r'^(?i)generateUserDeltas/$', views.generateUserDeltas, name = "generateUserDeltas")
-
+	url(r'^(?i)generateUserDeltas/$', views.generateUserDeltas, name = "generateUserDeltas"),
+	url(r'^(?i)iphoneback/$', views.iphoneBackEnd, name= "iphoneBackEnd"),
+	url(r'^(?i)iphoneloginbackend/$', views.iphoneLoginBackend, name= "iphoneloginbackend"),
+	url(r'^(?i)sendtext/$', views.sendText, name= "sendtext"),
+	url(r'^(?i)faculty/$', views.faculty, name="faculty"),
 )

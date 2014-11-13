@@ -13,6 +13,7 @@ from django.utils import simplejson, encoding, timezone
 from django.core.mail import send_mail, EmailMessage
 from DjangoServer import settings
 from django.core.urlresolvers import reverse
+from googlevoice import Voice
 
 import re
 import json
@@ -44,6 +45,18 @@ tempEmail = ''
 tempToken = ''
 tempPhone = ''
 
+def sendSMS(number, message):
+    user = settings.GVOICE
+    password = settings.GVOICE_PASS
+    voice = Voice()
+    voice.login(user, password)
+    voice.send_sms(number, message)
+
+@csrf_exempt
+def sendText(request):
+    sendSMS('3196369548',"This message is sent from the cyber-bullying server!")
+    return HttpResponse("lets see what happens")
+
 @csrf_exempt
 def instructions(request):
     return render(request, 'DataCollection/screenshot.html')
@@ -68,12 +81,29 @@ def emailBackend(request):
 def emailLogin(request):
     return render(request, 'DataCollection/email.html')
 
+@csrf_exempt
+def iphoneBackEnd(request):
+    return render(request, 'DataCollection/callback.html')
+
+@csrf_exempt
+def iphoneLoginBackend(request):
+    try:
+        global tempToken
+        temp = str(request.POST["token"]).split("&")
+        tempToken = temp[0].replace("#access_token=","")
+        print tempToken
+        return render(request, 'DataCollection/twitterornot.html')
+    except:
+        import sys
+        exc_type, exc_obj,exc_tb = sys.exc_info()
+        print exc_type, exc_obj,exc_tb
+        print "iphone backend"
+        return render(request,'DataCollection/fail.html')
 
 @csrf_exempt
 def facebookLoginBackend(request):
     try:
         global tempToken
-        print str(request.POST)
         tempToken = str(request.POST["token"])
         accessTokenRequestString = 'https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id='+ facebookAppId + '&client_secret='+ facebookSecret + '&fb_exchange_token=' + tempToken 
         facebookResponse= requests.get(accessTokenRequestString)
@@ -86,7 +116,7 @@ def facebookLoginBackend(request):
         exc_type, exc_obj,exc_tb = sys.exc_info()
         print exc_type, exc_obj,exc_tb
         print "login backend"
-        return HttpResponse('Fail')
+        return render(request,'DataCollection/fail.html')
 
 @csrf_exempt
 def surveyLogin(request):
@@ -985,4 +1015,6 @@ def unify_collect(request):
 def resources(request):
     return render(request , 'DataCollection/resources.html')
 
+def faculty(request):
+    return render(request, 'DataCollection/faculty.html')
 
