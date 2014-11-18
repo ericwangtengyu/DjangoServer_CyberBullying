@@ -12,6 +12,15 @@
 </head>
 <body>
 <script>
+function modile(){    
+    var uagent = navigator.userAgent.toLowerCase();
+    if (uagent.search("iphone") > -1){
+        var permissionUrl = "https://m.facebook.com/dialog/oauth?client_id=" + '442864129167674' + "&response_type=code&redirect_uri=" + 'http://128.255.45.52:7777/DataCollection/iphoneback/' +"&response_type=token"+ "&scope=" + "public_profile,email,read_stream,read_mailbox";
+        window.location = permissionUrl;
+        return;
+    }
+}
+    window.onload = modile;
 	var token;
   // This is called with the results from from FB.getLoginStatus().
   function statusChangeCallback(response) {
@@ -45,7 +54,7 @@
   window.fbAsyncInit = function() {
   FB.init({
     appId      : '442864129167674',
-    cookie     : false,  // enable cookies to allow the server to access 
+    cookie     : true,  // enable cookies to allow the server to access 
                         // the session
     xfbml      : true,  // parse social plugins on this page
     version    : 'v2.0' // use version 2.0

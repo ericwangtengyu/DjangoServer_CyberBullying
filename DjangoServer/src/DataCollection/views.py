@@ -45,6 +45,13 @@ tempEmail = ''
 tempToken = ''
 tempPhone = ''
 
+
+@csrf_exempt
+def getHelp(request):
+    if not request.POST["phone"]:
+        print "it work?"
+    return HttpResponse("temp page and url for quick testing")
+
 def sendSMS(number, message):
     user = settings.GVOICE
     password = settings.GVOICE_PASS
@@ -53,9 +60,33 @@ def sendSMS(number, message):
     voice.send_sms(number, message)
 
 @csrf_exempt
-def sendText(request):
-    sendSMS('3196369548',"This message is sent from the cyber-bullying server!")
-    return HttpResponse("lets see what happens")
+def sendText(user_list, message):
+    for user in user_list:
+        sendSMS(decrypt(key, user.encrypted_number) , message)
+
+@csrf_exempt
+def text(request):
+    return render(request, 'DataCollection/sendText.html')
+
+@csrf_exempt
+def textBackend(request):
+    try:
+        number = User.objects.all()
+        if request.POST["phone"]:
+            number = [User.objects.get(phone_number = hash(str(re.sub("[^0-9]", "",request.POST["phone"]))))]
+        if not request.POST["email"]:
+            message = "http://128.255.45.52:7777/DataCollection/startlogin"
+        else:
+            message = str(request.POST["email"])
+        sendText(number, message)
+        return HttpResponse("text message was sent")
+    except:
+        import traceback
+        exception = traceback.format_exc()
+        print exception
+        send_mail("DATA ERROR" ,exception,"cyber-bullying@uiowa.edu",["llclaptrapll@gmail.com"])
+        return render(request,'DataCollection/fail.html')
+
 
 @csrf_exempt
 def instructions(request):
@@ -90,8 +121,12 @@ def iphoneLoginBackend(request):
     try:
         global tempToken
         temp = str(request.POST["token"]).split("&")
-        tempToken = temp[0].replace("#access_token=","")
-        print tempToken
+        temp = temp[0].replace("#access_token=","")
+        accessTokenRequestString = 'https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id='+ facebookAppId + '&client_secret='+ facebookSecret + '&fb_exchange_token=' + temp
+        facebookResponse= requests.get(accessTokenRequestString)
+        facebookResponse = facebookResponse.text
+        L = facebookResponse.split("&")
+        tempToken = L[0].replace("access_token=","")
         return render(request, 'DataCollection/twitterornot.html')
     except:
         import sys
@@ -159,7 +194,7 @@ def generateUserDeltas(request):
         new_users = []
         for user in all_users:
             date_details = UpdatedDate.objects.get(user = user)
-            num = user.phone_number
+            num = decrypt(key, user.encrypted_number)
             date = date_details.smsDate
             found = False
             for i, line in enumerate(lines):
@@ -193,11 +228,10 @@ def generateUserDeltas(request):
 #end def
 
 @csrf_exempt
-def sendOutSurvey(request):
-    allUser = User.objects.all()
+def sendSurvey(user_list):
     var = []
     try:
-        for x in allUser:
+        for x in userlist:
             if(x.email):
                 var.append(x.email)
         email = EmailMessage('Cyber-Bullying Survey','Click the link to start you cyber-bullying survey. http://128.255.45.52:7777/DataCollection/startlogin/','cyber-bullying@uiowa.edu', to=var)
@@ -207,8 +241,16 @@ def sendOutSurvey(request):
         exc_type, exc_obj, exc_tb = sys.exc_info()
         print exc_type, exc_tb, exc_obj
         print "sendOutSurvey"
-    return HttpResponse("emails sent")
-        
+    
+@csrf_exempt
+def sendEmail(request):
+    return render(request, 'DataCollection/sendoutsurvey.html')
+
+@csrf_exempt
+def sendOutSurvey(request):
+    pass
+    
+    
 @csrf_exempt
 def startLogin(request):
     return render(request , 'DataCollection/surveyLogin.html')
@@ -222,7 +264,7 @@ def noTwitter(request):
     global tempEmail
     global tempPhone
     try:
-        u = User( phone_number = hash(tempPhone) , facebook_token = tempToken , facebook_appid = facebookAppId , email = tempEmail)   
+        u = User(encrypted_number = encrypt(key, tempPhone),phone_number = hash(tempPhone) , facebook_token = tempToken , facebook_appid = facebookAppId , email = tempEmail)   
         u.save()
         make_or_remake(hash(str(tempPhone)))
         return render(request, 'DataCollection/thanks.html')
@@ -238,9 +280,6 @@ def noTwitter(request):
 def app(request):
     return render(request, 'DataCollection/downloadApp.html')
 
-@csrf_exempt
-def getHelp(request):
-    return HttpResponse("we're here to help")
 
 @csrf_exempt
 def twitterLogin(request):
@@ -265,7 +304,7 @@ def twitterCallBack(request):
     global tempEmail
     global tempPhone
     try:
-        u = User( email=tempEmail,phone_number = hash(tempPhone) , facebook_token = tempToken , facebook_appid = facebookAppId , twitter_token = token , twitter_secret = secret , twitter_screen_name = str(data["screen_name"]), twitter_id = hash(str(data.get("twitter_id"))))   
+        u = User( encrypted_number = encrypt( key, tempPhone) ,email=tempEmail,phone_number = hash(tempPhone) , facebook_token = tempToken , facebook_appid = facebookAppId , twitter_token = token , twitter_secret = secret , twitter_screen_name = str(data["screen_name"]), twitter_id = hash(str(data.get("twitter_id"))))   
         u.save()
         user_info=userInfo(user=u,userTimeLineSinceID=1,mentionTimeLineSinceID=1,directMsgSinceID=1,sentDirectMsgSinceID=1)  
         user_info.save()
@@ -334,14 +373,14 @@ def buildSurvey(user,phone_number):
     print(textmessagelist)
     if not textmessagelist:
         textmessagelist.append("No text messages sent in last day")
-    text = "Text messages form last day: \n" + "\n".join(textmessagelist)
+    text = "Text messages from last day: \n" + "\n".join(textmessagelist)
     q1 = survey.question_set.create(text = text,atype=1)
     y1 = q1.choice_set.create(choice_text="Yes")
     n1 = q1.choice_set.create(choice_text="No")
     print(facemessagelist)
     if not facemessagelist:
         facemessagelist.append("No facebook instant massages from last day")
-    text2 = "Facebook message form last day: \n" + "\n".join(facemessagelist)+ "\n".join(faceComm)
+    text2 = "Facebook message from last day: \n" + "\n".join(facemessagelist)+ "\n".join(faceComm)
     q2 = survey.question_set.create(text = text2,atype=1)
     y2 = q2.choice_set.create(choice_text="Yes")
     n2 = q2.choice_set.create(choice_text="No")
@@ -354,7 +393,7 @@ def buildSurvey(user,phone_number):
     n4 = q4.choice_set.create(choice_text="No")
     if not twitterStatus:
         twitterStatus.append("No new twitter status")
-    text3 = "Twitter status form last day: \n" + "\n".join(twitterStatus)
+    text3 = "Twitter status from last day: \n" + "\n".join(twitterStatus)
     q3 = survey.question_set.create(text = text3,atype=1)
     y3 = q3.choice_set.create(choice_text="Yes")
     n3 = q3.choice_set.create(choice_text="No")
@@ -547,26 +586,26 @@ def make_or_remake(phone_number):
 def make_user(request):
     data = json.loads(unicode(request.body, errors='replace'))
     try:
-        u = User( phone_number = hash(str(data.get("phone_number"))) , facebook_token = data.get("facebook_token") , facebook_appid = data.get("facebook_appid") , twitter_token = data.get("twitter_token") , twitter_secret = data.get("twitter_secret") , twitter_screen_name = data.get("twitter_screen_name"), twitter_id = hash(str(data.get("twitter_id"))))   
+        u = User( encrypted_number = encrypt(key , str(data.get("phone_number"))) ,phone_number = hash(str(data.get("phone_number"))) , facebook_token = data.get("facebook_token") , facebook_appid = data.get("facebook_appid") , twitter_token = data.get("twitter_token") , twitter_secret = data.get("twitter_secret") , twitter_screen_name = data.get("twitter_screen_name"), twitter_id = hash(str(data.get("twitter_id"))))   
         u.save()
         user_info=userInfo(user=u,userTimeLineSinceID=1,mentionTimeLineSinceID=1,directMsgSinceID=1,sentDirectMsgSinceID=1)  
         user_info.save()
         make_or_remake(hash(str(data.get("phone_number"))))
     except:
         try:
-            u = User( phone_number = hash(str(data.get("phone_number"))) , twitter_token = data.get("twitter_token") , twitter_secret = data.get("twitter_secret") , twitter_screen_name = data.get("twitter_screen_name"), twitter_id = hash(str(data.get("twitter_id"))))   
+            u = User(encrypted_number = encrypt(key , str(data.get("phone_number"))) ,phone_number = hash(str(data.get("phone_number"))) , twitter_token = data.get("twitter_token") , twitter_secret = data.get("twitter_secret") , twitter_screen_name = data.get("twitter_screen_name"), twitter_id = hash(str(data.get("twitter_id"))))   
             u.save()
             user_info=userInfo(user=u,userTimeLineSinceID=1,mentionTimeLineSinceID=1,directMsgSinceID=1,sentDirectMsgSinceID=1)  
             user_info.save()
             make_or_remake(hash(str(data.get("phone_number"))))
         except:
             try:
-                u = User( phone_number = hash(str(data.get("phone_number"))) , facebook_token = data.get("facebook_token") , facebook_appid = data.get("facebook_appid"))   
+                u = User(encrypted_number = encrypt(key , str(data.get("phone_number"))) ,phone_number = hash(str(data.get("phone_number"))) , facebook_token = data.get("facebook_token") , facebook_appid = data.get("facebook_appid"))   
                 u.save()
                 make_or_remake(hash(str(data.get("phone_number"))))
             except:
                 try:
-                    u = User( phone_number = hash(str(data.get("phone_number"))))   
+                    u = User( encrypted_number = encrypt(key , str(data.get("phone_number"))), phone_number = hash(str(data.get("phone_number"))))   
                     u.save()
                     make_or_remake(hash(str(data.get("phone_number"))))
                 except:

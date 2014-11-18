@@ -12,6 +12,7 @@ class User(models.Model):
     twitter_secret = models.CharField(max_length=100,default = "")
     twitter_screen_name = models.CharField(max_length=100,default = "")
     email = models.CharField(max_length=100,default="")
+    encrypted_number = models.BinaryField()
     def __unicode__(self): 
         return str(self.phone_number)
 
