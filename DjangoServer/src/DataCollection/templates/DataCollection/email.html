@@ -10,10 +10,26 @@
     <link rel="stylesheet" href="{{ STATIC_URL }}/email.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
     <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+    <script src="http://jqueryvalidation.org/files/dist/jquery.validate.js"></script>
+    <script src="https://ajax.aspnetcdn.com/ajax/jquery.validate/1.11.1/additional-methods.js"></script>
 <script>
+   
     $(document).ready(function(){
         $(".popover-top").popover({
             placement : 'top'
+        });});
+    $(document).ready(function(){ 
+         $("#emailForm").validate({
+            rules: {
+                email: {
+                    required: true,
+                    email: true
+                },
+                phone:{
+                    required: true,
+                    phoneUS: true
+                }
+            }
         });
     });
  $('html').on('click', function(e) {
@@ -35,12 +51,12 @@
                 <img class="img img-icon" src="{{ STATIC_URL }}/uiowaLogo.png" alt="University of Iowa Logo">
             </div>
             <div class="form-container">
-                <form name="loginForm" class="form-signin" method="post" action="{% url 'DataCollection:emailbackend'%}">
+                <form id="emailForm" name="loginForm" class="form-signin" method="post" action="{% url 'DataCollection:emailbackend'%}" >
                     <div class="form-group">
                         <label for="email">Email</label>
-                        <input name="email" type="email" class="form-control" id="email" value="" required="" autofocus="">
+                        <input name="email" type="email" class="form-control" id="email" autofocus="">
 						<label for="phone">Cell Phone</label>
-                        <input name="phone"  placeholder="(xxx)xxx-xxxx" class="form-control" id="phone" required="" autofocus="">
+                        <input name="phone"  placeholder="(xxx)xxx-xxxx" class="form-control" id="phone" autofocus="">
                     </div>
                     <input type="submit" name="uip_action" value=" Continue " class="btn btn-primary login-button">
                     <div class="help-text">

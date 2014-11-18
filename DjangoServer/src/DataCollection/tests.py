@@ -10,13 +10,24 @@ from dateutil import parser
 
 key = 'This_is%a#made^up*K3y'
 
-class DataCollectionTests(TestCase):
-	def encrypt_decrypt_test(self):
-		user = User(phone_number = 123456789)
-		conversation=user.sms_conversation_set.create(participants = "[1234567890, 0987654321]" , last_updated = "14047561235")
-		createdTime = datetime.datetime.fromtimestamp(float ("14047561235")).strftime('%Y-%m-%d %H:%M:%S')
+class UtilitiesTests(TestCase):
+	def test_encrypt_decrypt(self):
 		text = "This is the message to encrypt. It should be the same when it is decrypted."
 		encryptText = encrypt(key,text)
-		messsage = conversation.sms_message_set.create(source = "1234567890" , recipient = "0147852369"  ,SmSbody = encrypttext ,created_time = createdTime)
-		decryptText = str(decrypt(key,message.SmSbody))
+		decryptText = str(decrypt(key,encryptText))
+		self.assertEqual(decryptText, text)
+	
+class UserPageTests(TestCase):
+	def test_signup_page(self):
+		resp = self.client.get('/cyber-bullying/login/')
+		self.assertEqual(resp.status_code, 200)
 		
+		resp = self.client.get('/cyber-bullying/instructions/')
+		self.assertEqual(resp.status_code, 200)
+
+		resp = self.client.get('/cyber-bullying/resources/')
+		self.assertEqual(resp.status_code, 200)
+
+		resp = self.client.get('/cyber-bullying/text/')
+		self.assertEqual(resp.status_code, 200)
+
