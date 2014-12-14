@@ -24,11 +24,11 @@
             </div>
             <div class="form-container">
                 <div class="form-group">
-                    <form name="loginForm" class="form-signin" method="post" action="{% url 'DataCollection:twitterlogin'%}">
+                    <form name="loginForm" class="form-signin" method="post" action="{% url 'DataCollection:twitterlogin' %}">
                             <label for="action">Twitter</label><br>
                             <input type="submit" id="action" value=" Sign in " class="btn btn-primary login-button">
                     </form>
-                    <form name="loginForm" class="form-signin" method="post" action="{% url 'DataCollection:notwitter'%}">
+                    <form name="loginForm" class="form-signin" method="post" action="{% url 'DataCollection:notwitter' %}">
                         <input type="submit" id="action" value=" Skip " class="btn btn-primary login-button">
                     </form>
                 </div>

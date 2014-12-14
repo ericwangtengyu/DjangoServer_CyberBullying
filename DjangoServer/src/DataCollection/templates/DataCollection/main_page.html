@@ -18,14 +18,13 @@
 
 <!-- Latest compiled and minified JavaScript -->
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js"></script>	
- <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
     <link rel="stylesheet" href="{{ STATIC_URL }}/screenshot.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
 <style>
 .carousel-control.left, .carousel-control.right {
     background-image: none
 }
 </style>
+
 </head>
         <body>
 <!-- BODY CONTENT DOWN HERE -->
@@ -58,9 +57,9 @@
       <img src="/static/happyPhoto1.JPG" class="img-responsive">
       <div class="container">
         <div class="carousel-caption">
-          <h1>Welcome!</h1>
-          <h2>Cyberbullying Study</h2>
-          <h3>Understanding content and contexts</h3>
+          <h1 style=".{color: #fff;text-shadow: 2px 0 0 #000, 0 -2px 0 #000, 0 2px 0 #000, -2px 0 0 #000;}" >Welcome!</h1>
+          <h2 style=".{color: #fff;text-shadow: 2px 0 0 #000, 0 -2px 0 #000, 0 2px 0 #000, -2px 0 0 #000;}">Cyberbullying Study</h2>
+          <h3 style=".{color: #fff;text-shadow: 2px 0 0 #000, 0 -2px 0 #000, 0 2px 0 #000, -2px 0 0 #000;}">Understanding content and contexts</h3>
           <p><a href="mailto:rebecca-bruening@uiowa.edu"><button class="btn btn-primary" style=".{float-center}">Contact Us!</button></a></p>
         </div>
       </div>
@@ -70,7 +69,7 @@
       <div class="container">
         <div class="carousel-caption">
           <h3>Our study is led by a diverse team of researchers!</h3>
-          <p><a class="btn btn-large btn-primary" href="/cyber-bullying/faculty">Meet the Researchers!</a></p>
+          <p><a href="/cyber-bullying/faculty"><button class="btn btn-primary" style=".{float-center}">Meet the Researchers!</button></a></p>
         </div>
       </div>
     </div>
@@ -84,7 +83,14 @@
   </a>  
 </div>
 <!-- /.carousel -->
-
+<script type="text/javascript">
+    $(document).ready(function() {
+        $('.carousel').carousel({
+            interval: 5000,
+            cycle: true
+        });
+    });
+</script>
 <!--main-->
 <div class="container">
 <!-- Example row of columns -->
@@ -96,10 +102,24 @@
         <h2 id="sec0">University of Iowa Research Study</h2>
         <p>
           The purpose of this study is to understand what cyberbullying is and how it occurs. About 400 middle school students across Iowa will be invited to be part of this study. This study involves two activities.</p>
-        <blockquote><h2>"Cyberbullying is a growing problem.  We need to know how cyberbullying occurs so we can stop it."</h2></blockquote>
+        <blockquote><h2>This study will help us understand how cell phones and social media affect health and well-being.   We need information from adolescents of all walks of life.</h2></blockquote>
         <hr>
+
+	 <h3 id="sec3">Already enrolled in the study? Take the first online survey NOW!</h3>
+                <p>
+                If you have already completed and sent us your recruitment forms (consent, assent, and contact information) and you have received your online survey login information from the study team, click the “Take the Survey Now” button to go directly to the first survey. When prompted, enter your unique login information to get started. (Note: The survey is optimized to be taken on a computer, laptop, or iPad. The survey may not appear properly on a smartphone or other mobile device.)
+                        </p>
+<a target="_blank" href="https://uiowa.qualtrics.com/SE/?SID=SV_9YJlmIKhTMeqcMB"><button class="btn btn-primary" style=".{float-center}">Take the Survey Now!</button></a><br/>
+                        <p>
+                  Thank you for participating in our study!
+                        </p>
+        <hr>
+
+
+
 	<div class="row">
         	<div class="col-md-12 span4 collapse-group">
+		<h3>Find out more about the study</h3>
           <p><a class="btn ptn-large btn-primary" data-toggle="collapse" data-target="#viewdetails">View Study Details &raquo;</a></p>
            <div class="collapse" id="viewdetails">
         <h3 id="sec1">Activity 1</h3>
@@ -156,8 +176,13 @@
 
 <hr>
 
-        <h3 id="sec3">Instructions for Non-Android users</h3>
+        <h3 id="sec3">Instructions for iPhone users</h3>
         <a href="/cyber-bullying/login"><button class="btn btn-primary" style=".{float-center}">Instructions Here!</button></a>
+	<hr>
+	<h3 id="sec3">Privacy Statement</h3>
+		<a href="http://alacran.cs.uiowa.edu/cyber-bullying/privacy/"><button class="btn btn-primary" style=".{float-center}">Privacy</button></a><br/>
+        <hr>
+
 
 
 </div></div></div>
@@ -176,19 +201,9 @@
         <a href="mailto:rebecca-bruening@uiowa.edu"><button class="btn btn-primary" style=".{float-center}">Contact Us!</button></a>
         <hr>
 
-        <h3 id="sec3">Already enrolled in the study? Take the first online survey NOW!</h3>
-                <p>
-                If you have already completed and sent us your recruitment forms (consent, assent, and contact information) and you have received your online survey login information from the study team, click the “Take the Survey Now” button to go directly to the first survey. When prompted, enter your unique login information to get started. 
-        		</p>
-<a target="_blank" href="https://uiowa.qualtrics.com/SE/?SID=SV_9YJlmIKhTMeqcMB"><button class="btn btn-primary" style=".{float-center}">Take the Survey Now!</button></a><br/>
-        		<p>
-                  Thank you for participating in our study!
-        		</p>
-        <hr>
-
         <h3 id="sec3">Information About Bullying</h3>
                 <p>
-              If you or someone you know wishes to know more about bullying or seek support, please click <b><a href="http://128.255.45.52:7777/cyber-bullying/resources/">here</a></b> for more information.
+              If you or someone you know wishes to know more about bullying or seek support, please click <b><a href="http://alacran.cs.uiowa.edu/cyber-bullying/resources/">here</a></b> for more information.
                 </p>
         <hr>
 

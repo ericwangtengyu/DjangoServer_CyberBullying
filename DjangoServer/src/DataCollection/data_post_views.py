@@ -15,6 +15,8 @@ from DjangoServer import settings
 from django.core.urlresolvers import reverse
 from googlevoice import Voice
 
+import DataCollection.views
+
 import re
 import json
 import datetime
@@ -32,6 +34,9 @@ from Crypto.Cipher import AES
 from Crypto import Random
 import os
 
+
+key = DataCollection.views.key
+
 @csrf_exempt    
 def postandroid(request):
     try:
@@ -40,10 +45,10 @@ def postandroid(request):
         print request.body
         user = User.objects.get(phone_number = hash(str(data.get("user"))))
         
-        save_data(data_to_write_to_file, "android", user)
+        DataCollection.views.save_data(data_to_write_to_file, "android", user)
         conversations = data.get("conversation")
         for conver in conversations:
-            if checkDate(user, conver.get("endTime")):
+            if DataCollection.views.checkDate(user, conver.get("endTime")):
                 participantsNOHash = eval(str(conver.get("participant")))
                 participantsHash = []
                 for part in participantsNOHash:
@@ -53,20 +58,19 @@ def postandroid(request):
                 except:
                     user.sms_conversation_set.create(participants = str(participantsHash) , last_updated = conver.get("endTime"))
                     conversation = user.sms_conversation_set.get( participants = str(participantsHash))
-                    print "Error inside of post android stuff"
                 for message in conver.get("messages"):
-                    if checkDate(user,message.get("createTime")):
+                    if DataCollection.views.checkDate(user,message.get("createTime")):
                         try:
                             createdTime = datetime.datetime.fromtimestamp(float (message.get("createTime"))).strftime('%Y-%m-%d %H:%M:%S')
                         except:
-                            fail(request,"error in post android")
+                            DataCollection.views.fail(request,"error in post android")
                         else:
                             text = encrypt(key,message.get("text"))
                             if not conversation.sms_message_set.filter(created_time=createdTime):
                                 conversation.sms_message_set.create(source = hash(str(message.get("sPID"))) , recipient = hash(str(message.get("dPID")))  ,SmSbody = text ,created_time = createdTime)
-        upDateSMS(user)
+        DataCollection.views.upDateSMS(user)
     except:
-        return fail(request, "Error in post android")
+        return DataCollection.views.fail(request, "Error in post android")
     return HttpResponse('worked')
     
 @csrf_exempt     
@@ -79,11 +83,11 @@ def facebook_post(request):
         data = data.replace("\u", "")
         data = json.loads(data)
         user = User.objects.get(pk = data.get("user"))
-        upDateFacebook(user)
+        DataCollection.views.upDateFacebook(user)
         conversations = data.get("conversation_data")
         stream_objects = data.get("stream_data")
         
-        save_data(data_to_write_to_file, "facebook", user)
+        DataCollection.views.save_data(data_to_write_to_file, "facebook", user)
 
         
         # Update the database with the new conversation data
@@ -101,6 +105,7 @@ def facebook_post(request):
     return HttpResponse('done')
 
 def handle_facebook_activities(stream_objects, user, data):
+    print "facebook_activities", key
     for activityJSON in stream_objects:
         # All of the various encrypted fields
         caption =         encrypt(key, str(activityJSON.get("caption", "")))
@@ -113,7 +118,9 @@ def handle_facebook_activities(stream_objects, user, data):
         story_type =     encrypt(key, str(activityJSON.get("type", "")))
         link =             encrypt(key, str(activityJSON.get("link", "")))
         source =         encrypt(key, str(activityJSON.get("source", "")))
-        
+
+	#print "activity orig [%s] encrypt [%s]" % (str(activityJSON.get("message", "")), message)       
+
         # Get the times
         updated_time = parser.parse(activityJSON.get("updated_time")).strftime('%Y-%m-%d %H:%M:%S')
         created_time = parser.parse(activityJSON.get("created_time")).strftime('%Y-%m-%d %H:%M:%S')
@@ -310,8 +317,8 @@ def twitter_post_separate(request):
         statusData=result.get("statusData")
         p=User.objects.get(twitter_id=userTwitterID)
         
-        save_data(data_to_write_to_file, "twitter", user = p)
-        upDateTwitter(p)
+        DataCollection.views.save_data(data_to_write_to_file, "twitter", user = p)
+        DataCollection.views.upDateTwitter(p)
         userInfo.objects.filter(user=p).update(userTimeLineSinceID=result.get("userTimeLineSinceID"),mentionTimeLineSinceID=result.get("mentionTimeLineSinceID"),directMsgSinceID=result.get("directMsgSinceID"),sentDirectMsgSinceID=result.get("sentDirectMsgSinceID"))
         for conversation in conversationData: 
             if twitter_direct_conversation.objects.filter(cID=conversation.get("CID")):

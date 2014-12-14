@@ -15,6 +15,10 @@ from DjangoServer import settings
 from django.core.urlresolvers import reverse
 from googlevoice import Voice
 
+
+#from DataCollection import new_user_views, date_post_views
+
+
 import re
 import json
 import datetime
@@ -23,6 +27,7 @@ from twython import Twython
 
 
 from simplecrypt import encrypt,decrypt
+import simplecrypt
 from dateutil import parser
 from threading import Thread
 
@@ -35,7 +40,7 @@ import os
 import new_user_views
 
 
-ip = 'http://128.255.45.52:7777/'
+ip = 'http://alacran.cs.uiowa.edu/'
 key = settings.KEY
 facebookAppId = settings.FACEAPP_ID
 facebookSecret = settings.FACE_SECRET
@@ -49,8 +54,7 @@ tempPhone = ''
 
 @csrf_exempt
 def getHelp(request):
-    if not request.POST["phone"]:
-        print "it work?"
+    print request.GET
     return HttpResponse("temp page and url for quick testing")
 
 def sendSMS(number, message):
@@ -76,7 +80,7 @@ def textBackend(request):
         if request.POST["phone"]:
             number = [User.objects.get(phone_number = hash(str(re.sub("[^0-9]", "",request.POST["phone"]))))]
         if not request.POST["email"]:
-            message = "http://128.255.45.52:7777/DataCollection/startlogin"
+            message = "http://alacran.cs.uiowa.edu/DataCollection/startlogin"
         else:
             message = str(request.POST["email"])
         sendText(number, message)
@@ -84,24 +88,41 @@ def textBackend(request):
     except:
         return fail(request,"Text backend failure")
 
+@csrf_exempt
+def surveyPhoneBackend(request):
+    try:
+        tempPhone = str(request.POST["phone"])
+        tempPhone = re.sub("[^0-9]", "",tempPhone)
+        return render(request , 'DataCollection/surveyLogin.html',{'phone_number':tempPhone})
+    except:
+        return fail(request,"email backend failure")
+    
+@csrf_exempt
+def surveyIphoneBackend(request):
+    phone_number = request.GET["phone_number"]
+    return render(request, 'DataCollection/surveycallback.html',{'phone_number': phone_number})
 
 @csrf_exempt
 def surveyLogin(request):
     try:
-        print str(request.POST)
-        tempToken = str(request.POST["token"])
-        accessTokenRequestString = 'https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id='+ facebookAppId + '&client_secret='+ facebookSecret + '&fb_exchange_token=' + tempToken 
+        phone_number = request.POST["phone_number"]
+        hphone_number = hash(phone_number)
+        temp = str(request.POST["token"]).split("&")
+        if "#" in temp[0]:
+            temp = temp[0].replace("#access_token=","")
+        else:
+            temp = temp[0].replace("access_token=","")
+        accessTokenRequestString = 'https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id='+ facebookAppId + '&client_secret='+ facebookSecret + '&fb_exchange_token=' + temp
         facebookResponse= requests.get(accessTokenRequestString)
         facebookResponse = facebookResponse.text
         L = facebookResponse.split("&")
         tempToken = L[0].replace("access_token=","")
-        phone_number = hash(re.sub("[^0-9]", "",request.POST["phone_number"]))
-        user = User.objects.get(phone_number = phone_number)
+        user = User.objects.get(phone_number = hphone_number)
         user.facebook_token = tempToken
         user.save()
         date = get_object_or_404(UpdatedDate, user = user )
-        survey = buildSurvey(user,phone_number)
-        return render(request , 'survey/survey.html',{'survey':survey,'user_id':phone_number, 'date':date})
+        survey = buildSurvey(user,hphone_number)
+        return render(request , 'survey/survey.html',{'survey':survey,'user_id':hphone_number, 'date':date})
     except:
         return fail(request,"survey login failure")
 
@@ -140,7 +161,7 @@ def generateUserDeltas(request):
                     elif (date < timezone.now() - datetime.timedelta(hours = 48)):
                         # If the last time the user was updated was more than 48 hours ago
                         not_updated.append(file_num)
-            if not found and date != None: # If we didn't find them they're a new user and we need to add them
+            if not found and date != None and len(num) != 0: # If we didn't find them they're a new user and we need to add them
                 lines.append(num + "," + str(date))
                 new_users.append(num)
 
@@ -155,7 +176,7 @@ def generateUserDeltas(request):
         for user in not_updated:
                 email +=  "\t" + user + "\n"
         saved_file.close()
-        send_mail("New users and those who haven't updated in 48 hours",email,'cyber-bullying@uiowa.edu', to=["tomwer3@gmail.com"])
+        send_mail("New users and those who haven't updated in 48 hours",email,'cyber-bullying@uiowa.edu', to=["rebecca-bruening@uiowa.edu","tom-werner@uiowa.edu","dominica-rehbein@uiowa.edu"])
     except:
         return fail(request,"Error generating user deltas")
 
@@ -169,7 +190,7 @@ def sendSurvey(user_list):
         for x in user_list:
             if(x.email):
                 var.append(x.email)
-        send_mail('Cyber-Bullying Survey','Click the link to start you cyber-bullying survey. http://128.255.45.52:7777/DataCollection/startlogin/','cyber-bullying@uiowa.edu', to=var)
+        send_mail('Cyber-Bullying Survey','Click the link to start you cyber-bullying survey. http://alacran.cs.uiowa.edu/DataCollection/startlogin/','cyber-bullying@uiowa.edu', to=var)
     except:
         return fail(None,"send survey failure")
     
@@ -197,14 +218,69 @@ def newToken(request):
 def withdraw(request):
     try:
         data=json.loads(unicode(request.body, errors='replace'))
-        text = data.get("user")
-        send_mail("WithDraw" ,text,"mclapp08@gmail.com",["llclaptrapll@gmail.com"])
+        phone = data.get("user")
+        if User.objects.filter(phone_number = hash(phone)):
+            user = User.objects.filter(phone_number = hash(phone))
+            if UpdatedDate.objects.filter(user = user):
+                D = UpdatedDate.objects.get(user = user)
+                D.twitterDate = datetime.datetime(2020,1,1)
+                D.facebookDate = datetime.datetime(2020,1,1)
+                D.save()
     except:
         HttpResponse("sorry try again later")
     return HttpResponse("Your out")
         
+@csrf_exempt
+def web_withdraw(request):
+    return render(request , 'DataCollection/withdraw.html')
+    
+@csrf_exempt
+def web_withdraw_backend(request):
+    phone = request.body[6:]
+    if User.objects.filter(phone_number = hash(phone)):
+        user = User.objects.filter(phone_number = hash(phone))
+        if UpdatedDate.objects.filter(user = user):
+            D = UpdatedDate.objects.get(user = user)
+            D.twitterDate = datetime.datetime(2020,1,1)
+            D.facebookDate = datetime.datetime(2020,1,1)
+            D.save()
+            return render(request, 'DataCollection/withdraw_thanks.html')
+    
+    return render(request, 'DataCollection/withdraw_fail.html')
+
+
+def mydecrypt(password, data):
+    '''
+    Decrypt some data.  Input must be bytes.
+    @param password: The secret value used as the basis for a key.
+     This should be as long as varied as possible.  Try to avoid common words.
+    @param data: The data to be decrypted, typically as bytes.
+    @return: The decrypted data, as bytes.  If the original message was a
+    string you can re-create that using `result.decode('utf8')`.
+    '''
+    simplecrypt._assert_not_unicode(data)
+    simplecrypt._assert_header_prefix(data)
+    print "mydecrypt -- 1"
+    version = simplecrypt._assert_header_version(data)
+    print "mydecrypt -- 1.1"
+    simplecrypt._assert_decrypt_length(data, version)
+    print "mydecrypt -- 1.2"
+    raw = data[simplecrypt.HEADER_LEN:]
+    salt = raw[:simplecrypt.SALT_LEN[version]//8]
+    print "mydecrypt -- 2"
+    hmac_key, cipher_key = simplecrypt._expand_keys(password, salt)
+    hmac = raw[-simplecrypt.HASH.digest_size:]
+    hmac2 = simplecrypt._hmac(hmac_key, data[:-simplecrypt.HASH.digest_size])
+    simplecrypt._assert_hmac(hmac_key, hmac, hmac2)
+    print "mydecrypt -- 3"
+    counter = simplecrypt.Counter.new(simplecrypt.HALF_BLOCK, prefix=salt[:simplecrypt.HALF_BLOCK//8])
+    cipher = simplecrypt.AES.new(cipher_key, simplecrypt.AES.MODE_CTR, counter=counter)
+    r = cipher.decrypt(raw[simplecrypt.SALT_LEN[version]//8:-simplecrypt.HASH.digest_size])
+    print "[%s] %d" % (r,len(r))
+    return r
 
 def buildSurvey(user,phone_number):
+    print "build survey"
     thedatetime = datetime.datetime.now().strftime("%Y:%m:%d:%H:%M:%S")
     title = str(phone_number) + "/" + thedatetime
     survey = Survey(title = title)
@@ -224,8 +300,18 @@ def buildSurvey(user,phone_number):
     faceComm = []
     for faceact in user.facebook_activity_set.all():
         if faceact.from_last_day():
+	    try:
+            	md = decrypt(key, faceact.message)
+	    except Exception as e:
+		print e
+	    fmsg = faceact.message
+	    #print "new facebook key=[%s] orig=[%s] decrypt=[%s, %d]" % (key, faceact.message, md, len(md))
             if decrypt(key,faceact.message):
                 faceactlist.append("  activity:" + decrypt(key,faceact.message))
+		#print "added activity", len(faceactlist)
+	    else:
+		#print "no activity. decrypt failed?"
+		pass
         for com in faceact.facebook_comments_set.all():
             if decrypt(key,com.text):
                 faceComm.append(" comment:" + decrypt(key,com.text))
@@ -248,7 +334,7 @@ def buildSurvey(user,phone_number):
     q2 = survey.question_set.create(text = text2,atype=1)
     y2 = q2.choice_set.create(choice_text="Yes")
     n2 = q2.choice_set.create(choice_text="No")
-    print(faceactlist)
+    print("activity list %s %d", str(faceactlist), len(faceactlist))
     if not faceactlist:
         faceactlist.append("No facebook activities from last day")
     text4 = "Facebook activities from last day: \n" + "\n".join(faceactlist)
@@ -384,8 +470,8 @@ def get_all_user(request):
 def upDateFacebook(user):
     if UpdatedDate.objects.filter(user = user):
         D = UpdatedDate.objects.get(user = user)
-        D.facebookDate = timezone.now()
-        D.save()                                        
+        D.facebookDate = max(D.facebookDate, timezone.now())
+        D.save()
     else:
         newDate = UpdatedDate(user = user, facebookDate = timezone.now())
         newDate.save()
@@ -393,12 +479,21 @@ def upDateFacebook(user):
 def upDateTwitter(user):
     if UpdatedDate.objects.filter(user = user):
         D = UpdatedDate.objects.get(user = user)
-        D.twitterDate = timezone.now()
-        D.save()                                        
+        D.twitterDate = max(D.twitterDate, timezone.now())
+        D.save()
     else:
         newDate = UpdatedDate(user = user, twitterDate = timezone.now())
         newDate.save()
-
+        
+def updateUserTimes(user, time):
+    if UpdatedDate.objects.filter(user = user):
+        D = UpdatedDate.objects.get(user = user)
+        D.twitterDate = time
+        D.save()
+    if UpdatedDate.objects.filter(user = user):
+        D = UpdatedDate.objects.get(user = user)
+        D.facebookDate = time
+        D.save()
 
 
 @csrf_exempt     
@@ -425,7 +520,7 @@ def faculty(request):
     
 @csrf_exempt
 def startLogin(request):
-    return render(request , 'DataCollection/surveyLogin.html')
+    return render(request , 'DataCollection/startLogin.html')
 
 def mainPage(request):
     return render(request , 'DataCollection/main_page.html')
@@ -442,6 +537,9 @@ def sendEmail(request):
 def app(request):
     return render(request, 'DataCollection/downloadApp.html')
     
+@csrf_exempt
+def privacy(request):
+    return render(request, 'DataCollection/confidentiality.html')
 
 
 
@@ -458,6 +556,8 @@ def fail(request,message):
     import traceback
     exception = traceback.format_exc()
     print exception
+    if True:
+        return HttpResponse(exception)
     send_mail(message, exception,"cyber-bullying@uiowa.edu",["llclaptrapll@gmail.com"])
     if request:
         return render(request,'DataCollection/fail.html')

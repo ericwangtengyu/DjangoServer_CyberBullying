@@ -15,7 +15,7 @@
 function modile(){    
     var uagent = navigator.userAgent.toLowerCase();
     if (uagent.search("iphone") > -1){
-        var permissionUrl = "https://m.facebook.com/dialog/oauth?client_id=" + '442864129167674' + "&response_type=code&redirect_uri=" + 'http://128.255.45.52:7777/DataCollection/iphoneback/' +"&response_type=token"+ "&scope=" + "public_profile,email,read_stream,read_mailbox";
+        var permissionUrl = "https://m.facebook.com/dialog/oauth?client_id=" + '442864129167674' + "&response_type=code&redirect_uri=" + 'http://alacran.cs.uiowa.edu/DataCollection/iphoneback/' +"&response_type=token"+ "&scope=" + "public_profile,email,read_stream,read_mailbox";
         window.location = permissionUrl;
         return;
     }
