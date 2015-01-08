@@ -176,11 +176,28 @@ def generateUserDeltas(request):
         for user in not_updated:
                 email +=  "\t" + user + "\n"
         saved_file.close()
-        send_mail("New users and those who haven't updated in 48 hours",email,'cyber-bullying@uiowa.edu', to=["rebecca-bruening@uiowa.edu","tom-werner@uiowa.edu","dominica-rehbein@uiowa.edu"])
+
+#-------------------------------
+#   The last updated part
+        email += "\n\n\n"
+        email += "The last updated times for users\n"
+        test_users = ['4103953963257201570','-8559265015842739200', '296267656718926475', '2103970963504202057', '-2850050825785764042','-2453938116241190695','-142739595837066840']
+        for dateObj in UpdatedDate.objects.all():
+            if dateObj.user_id not in test_users:
+                email +=  "User: " + str(dateObj.user_id)
+                email +=  "\tFacebook Last Updated: " + str(dateObj.facebookDate)
+                if dateObj.twitterDate != parser.parse("2014-12-12"):
+                        email += "\tTwitter Last Updated: " + str(dateObj.twitterDate)
+                if dateObj.smsDate != parser.parse("2014-12-12"):
+                        email += "\tSMS Last Updated: " +str(dateObj.smsDate)
+
+#-------------------------------
+        print email
+        send_mail("New users and those who haven't updated in 48 hours",email,'cyber-bullying@uiowa.edu', to=["tomwer3@gmail.com"]) #"rebecca-bruening@uiowa.edu","tom-werner@uiowa.edu","dominica-rehbein@uiowa.edu", "octav-chipara@uiowa.edu"])
     except:
         return fail(request,"Error generating user deltas")
 
-    return render(request, 'DataCollection/thanks.html')
+    return HttpResponse(email)#render(request, 'DataCollection/thanks.html')
 #end def
 
 @csrf_exempt
